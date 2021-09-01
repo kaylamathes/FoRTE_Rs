@@ -439,9 +439,6 @@ normality <- all_years_summary%>%
   group_by(Severity, year, Treatment) %>%
   shapiro_test(soilCO2Efflux)
 
-##Plot normality graph 
-qqPlot(all_years_summary$soilCO2Efflux)
-
 ##Transfrom variables into factors for equal of variance analysis 
 all_years_summary$Severity <- as.factor(all_years_summary$Severity)
 all_years_summary$Treatment <- as.factor(all_years_summary$Treatment)
@@ -456,7 +453,6 @@ total_rs_model <-  all_years_summary%>%
   group_by(year, Rep_ID, Severity, Treatment)%>%
   summarize(mean_Rs = mean(soilCO2Efflux))%>%
   ungroup()
-
 
 
 ##Run split plot Model 
@@ -511,17 +507,5 @@ ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
 g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25))
 ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
 
-##Playing with Q10 analysis 
-all_2019_1 <- all_2019%>%
-  filter(!is.na(Temp))%>%
-  filter(!is.na(Efflux))
 
-##Add disturbance severity column to dataset
-all_2019_1 <- all_2019_1 %>%
-  mutate(Severity = sapply(Subplot_code, Plot_conversion))
 
-ggplot(all_2019_1, aes(x = Temp, y = Efflux))+
-  geom_smooth(method = "glm")+
-  geom_point() +
-  theme_minimal() +
-  facet_grid(Severity ~ .)
