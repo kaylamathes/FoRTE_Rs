@@ -230,6 +230,25 @@ Sub_plot_conversion <- function(Subplot_code) {
 all_years <- all_years %>%
   mutate(Treatment = sapply(Subplot_code, Sub_plot_conversion))
 
+######Create Full Rs, moisture and temperature timeseries####
+
+##Create date groups (1 complete round of respiration) [Working here!!!!]
+
+all_years_grouped <- all_years%>%
+  mutate(week_group = case_when(date == "2018-07-27" | date == "2018-08-03" ~"1",
+                                date == "2018-08-10" | date == "2018-08-14"))
+
+###Summarize by subplots (Collars are sudo-replicates)
+all_years_summary_timeseries <- all_years%>%
+  group_by(Rep_ID, date, Severity, Treatment, Subplot_code)%>%
+  summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
+
+##Summarize severity by replications per year 
+all_years_timeseries_severity <- all_years_summary_timeseries%>%
+  group_by(date, Rep_ID, Severity)%>%
+  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
+
+
 ##Inlude only growing season dates from all years (July and August)
 all_years_gs <- all_years%>%
   filter(date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06") 
@@ -239,7 +258,7 @@ all_years_summary <- all_years_gs%>%
   group_by(Rep_ID, year, Severity, Treatment, Subplot_code)%>%
   summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
 
-####Summarize Data by severity ######
+####Summarize Data by severity (Growing season) ######
 
 ##Summarize severity by replications per year 
 all_years_summary_severity <- all_years_summary%>%
