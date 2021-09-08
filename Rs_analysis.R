@@ -256,6 +256,10 @@ all_years_grouped <- all_years%>%
                                 date == "2020-11-16" |date == "2020-11-17" | date == "2020-11-18" ~ "2020-11-16", 
                                 date == "2021-07-06" | date =="2021-07-09" |date == "2021-07-10" ~ "2021-07-06",
                                 date == "2021-08-03" |  date == "2021-08-04" |  date == "2021-08-06" ~ "2021-08-03"))
+
+##Make week group a POSIX class 
+all_years_grouped$week_group <- as.POSIXct(all_years_grouped$week_group,format="%Y-%m-%d")
+
 ###Summarize by subplots (Collars are sudo-replicates)
 all_years_summary_timeseries <- all_years_grouped%>%
   group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
@@ -263,13 +267,19 @@ all_years_summary_timeseries <- all_years_grouped%>%
 
 ##Summarize severity by replicate per round of respiration (week group)
 all_years_timeseries_severity <- all_years_summary_timeseries%>%
-  group_by(week_group, Rep_ID, Severity)%>%
+  group_by(week_group, Severity)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
 
 ##Summarize treatment by replicates per round of respiration (week group)
 all_years_timeseries_treatment <- all_years_summary_timeseries%>%
-  group_by(week_group, Rep_ID, Treatment)%>%
+  group_by(week_group, Treatment)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+
+###Figure 1: BIG Timeseries [Work in progress!!!!]
+ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, group = Severity)) +
+  geom_path() +
+  geom_point() +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux))
 
 
 #######Summarize per year (growing season only)######
