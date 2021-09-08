@@ -55,6 +55,11 @@ all_2018_sub <- all_2018%>%
 all_2019_sub <- all_2019%>%
   select(!notes)%>%
   select(!HHMMSS)%>%
+  filter(date != "2019-05-30") %>%
+  filter(date != "2019-06-11")%>%
+  filter(date != "2019-06-18")%>%
+  filter(date != "2019-06-28")%>%
+  filter(date != "2019-07-05")%>%
   filter(!is.na(soilCO2Efflux))
 
 #2020
@@ -232,23 +237,42 @@ all_years <- all_years %>%
 
 ######Create Full Rs, moisture and temperature timeseries####
 
-##Create date groups (1 complete round of respiration) [Working here!!!!]
-
+##Create date groups (1 complete round of respiration) 
 all_years_grouped <- all_years%>%
-  mutate(week_group = case_when(date == "2018-07-27" | date == "2018-08-03" ~"1",
-                                date == "2018-08-10" | date == "2018-08-14"))
-
+  mutate(week_group = case_when(date == "2018-07-27" | date == "2018-08-03" ~ "2018-07-07",
+                                date == "2018-08-10" | date == "2018-08-14" ~ "2018-08-10",
+                                date == "2018-11-15" | date == "2018-11-16" | date =="2018-11-17" ~"2018-11-15",
+                                date == "2019-05-14" | date == "2019-05-15" ~ "2019-05-14", 
+                                date == "2019-05-21" | date == "2019-05-22" |date == "2019-05-23" | date == "2019-05-24" ~ "2019-05-21", 
+                                date == "2019-06-05" | date == "2019-06-06" | date == "2019-06-07" ~ "2019-06-05", 
+                                date == "2019-07-08" | date == "2019-07-09" | date =="2019-07-12" ~ "2019-07-08", 
+                                date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-19" ~ "2019-07-16", 
+                                date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" ~ "2019-07-24", 
+                                date == "2019-08-01" |date == "2019-08-02" |date == "2019-08-03" ~ "2019-08-01", 
+                                date == "2019-11-11" |date == "2019-11-12" ~ "2019-11-11", 
+                                date == "2020-07-07" |date == "2020-07-08" | date == "2020-07-09" ~ "2020-07-07", 
+                                date == "2020-07-24" | date == "2020-07-25" ~ "2020-07-24", 
+                                date == "2020-08-05" | date == "2020-08-06" ~ "2020-08-05", 
+                                date == "2020-11-16" |date == "2020-11-17" | date == "2020-11-18" ~ "2020-11-16", 
+                                date == "2021-07-06" | date =="2021-07-09" |date == "2021-07-10" ~ "2021-07-06",
+                                date == "2021-08-03" |  date == "2021-08-04" |  date == "2021-08-06" ~ "2021-08-03"))
 ###Summarize by subplots (Collars are sudo-replicates)
-all_years_summary_timeseries <- all_years%>%
-  group_by(Rep_ID, date, Severity, Treatment, Subplot_code)%>%
+all_years_summary_timeseries <- all_years_grouped%>%
+  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
   summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
 
-##Summarize severity by replications per year 
+##Summarize severity by replicate per round of respiration (week group)
 all_years_timeseries_severity <- all_years_summary_timeseries%>%
-  group_by(date, Rep_ID, Severity)%>%
-  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
+  group_by(week_group, Rep_ID, Severity)%>%
+  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+
+##Summarize treatment by replicates per round of respiration (week group)
+all_years_timeseries_treatment <- all_years_summary_timeseries%>%
+  group_by(week_group, Rep_ID, Treatment)%>%
+  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
 
 
+#######Summarize per year (growing season only)######
 ##Inlude only growing season dates from all years (July and August)
 all_years_gs <- all_years%>%
   filter(date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06") 
