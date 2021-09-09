@@ -15,6 +15,7 @@ library(rstatix)
 library(tidyverse)
 library(googledrive)
 library(lubridate)
+library(scales)
 
 
 
@@ -257,29 +258,75 @@ all_years_grouped <- all_years%>%
                                 date == "2021-07-06" | date =="2021-07-09" |date == "2021-07-10" ~ "2021-07-06",
                                 date == "2021-08-03" |  date == "2021-08-04" |  date == "2021-08-06" ~ "2021-08-03"))
 
-##Make week group a POSIX class 
-all_years_grouped$week_group <- as.POSIXct(all_years_grouped$week_group,format="%Y-%m-%d")
+##Make week group date class 
+all_years_grouped$week_group <- as.Date(all_years_grouped$week_group,format="%Y-%m-%d")
 
+#####Rs Timeseries 
 ###Summarize by subplots (Collars are sudo-replicates)
 all_years_summary_timeseries <- all_years_grouped%>%
   group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
-  summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
+  summarize(soilCO2Efflux = mean(soilCO2Efflux))
 
 ##Summarize severity by replicate per round of respiration (week group)
 all_years_timeseries_severity <- all_years_summary_timeseries%>%
   group_by(week_group, Severity)%>%
-  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
 ##Summarize treatment by replicates per round of respiration (week group)
 all_years_timeseries_treatment <- all_years_summary_timeseries%>%
   group_by(week_group, Treatment)%>%
-  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux), ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp), ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+  summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
+
+######Soil Temperature Timeseries 
+###Summarize by subplots (Collars are sudo-replicates)
+all_years_summary_timeseries_temp <- all_years_grouped%>%
+  filter(!is.na(soilTemp))%>%
+  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
+  summarize(soilTemp = mean(soilTemp))
+
+##Summarize severity by replicate per round of respiration (week group)
+all_years_timeseries_severity_temp <- all_years_summary_timeseries_temp%>%
+  group_by(week_group, Severity)%>%
+  summarize(ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp))
+
+##Summarize treatment by replicates per round of respiration (week group)
+all_years_timeseries_treatment_temp <- all_years_summary_timeseries_temp%>%
+  group_by(week_group, Treatment)%>%
+  summarize(ave_temp = mean(soilTemp), std_error_temp = std.error(soilTemp))
+
+
+######Soil Moisture (VWC) Timeseries
+###Summarize by subplots (Collars are sudo-replicates)
+all_years_summary_timeseries_VWC <- all_years_grouped%>%
+  filter(!is.na(VWC))%>%
+  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
+  summarize(VWC =mean(VWC))
+
+##Summarize severity by replicate per round of respiration (week group)
+all_years_timeseries_severity_VWC <- all_years_summary_timeseries_VWC%>%
+  group_by(week_group, Severity)%>%
+  summarize(ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+
+##Summarize treatment by replicates per round of respiration (week group)
+all_years_timeseries_treatment_VWC <- all_years_summary_timeseries_VWC%>%
+  group_by(week_group, Treatment)%>%
+  summarize(ave_VWC = mean(VWC), std_error_VWC = std.error(VWC))
+
+
+
+
 
 ###Figure 1: BIG Timeseries [Work in progress!!!!]
-ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, group = Severity)) +
+##Rs Severity 
+ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, group = Severity, color = Severity)) +
+  labs(x = "Date", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
+  (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15"))))+
   geom_path() +
   geom_point() +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux))
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux)) +
+  theme_classic() +
+  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) 
+
 
 
 #######Summarize per year (growing season only)######
