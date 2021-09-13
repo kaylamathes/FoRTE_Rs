@@ -444,7 +444,7 @@ splot <- ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fil
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
   labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
-ggsave("Output/severity_boxplot.png",height = 10, width = 15 , units = "in")
+ggsave("severity_boxplot.png",height = 10, width = 15 , units = "in")
 
 
 #####Summarize data by Treatment######
@@ -633,16 +633,35 @@ all_years_summary$year <- as.factor(all_years_summary$year)
 ##Equality of variance test for severity and treatment 
 leveneTest(soilCO2Efflux ~ year*Treatment*Severity, data = all_years_summary)
 
-##Create model dataset  
+##Create Rs model dataset  
 total_rs_model <-  all_years_summary%>%
   filter(!is.na(soilCO2Efflux))%>%
   group_by(year, Rep_ID, Severity, Treatment)%>%
   summarize(mean_Rs = mean(soilCO2Efflux))%>%
   ungroup()
 
+##Create temp model dataset  
+total_temp_model <-  all_years_summary%>%
+  filter(!is.na(soilTemp))%>%
+  group_by(year, Rep_ID, Severity, Treatment)%>%
+  summarize(mean_temp = mean(soilTemp))%>%
+  ungroup()
+
+##Create VWC model dataset  
+total_VWC_model <-  all_years_summary%>%
+  filter(!is.na(VWC))%>%
+  group_by(year, Rep_ID, Severity, Treatment)%>%
+  summarize(mean_VWC = mean(VWC))%>%
+  ungroup()
+
+
 
 ##Run split plot Model 
 Rsmodel <- with(total_rs_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_Rs))
+
+Temp_model <- with(total_temp_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_temp))
+
+VWC_model <- with(total_VWC_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_VWC))
 
 ##Post-hoc analysis by year 
 gla<-Rsmodel$gl.a
