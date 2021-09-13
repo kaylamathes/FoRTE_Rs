@@ -322,9 +322,9 @@ p1 <- ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, 
   labs(x = "Date", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 15),legend.text = element_text(size = 10), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0,0,0.33,"cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux)) +
+  geom_point(size = 2.5) +
+  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 20),legend.text = element_text(size = 15), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0,0,0.33,"cm")) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.7, width = 15) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
   scale_y_continuous(position = "left",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
   guides(color=guide_legend(nrow=2, byrow=TRUE))
@@ -335,11 +335,11 @@ p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux,
   labs(x = "Date", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 15),legend.text = element_text(size = 10), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0,0,0.33,"cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux)) +
+  geom_point(size = 2.5) +
+  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 15), axis.title.y =  element_text(size = 20),legend.text = element_text(size = 15), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0.20,0,0,"cm")) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.7, width = 15) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
+  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
   guides(color=guide_legend(nrow=2, byrow=TRUE))
 
 ##Temp Severity 
@@ -347,10 +347,10 @@ p3 <- ggplot(all_years_timeseries_severity_temp, aes(x = week_group, y = ave_tem
   labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.7, width = 15) +
   theme_classic() +
-  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 15), plot.margin = margin(-0.23,0,0,0.21, "cm")) +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 20), plot.margin = margin(-0.23,0,0,0.21, "cm")) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
   scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL))
 
@@ -359,24 +359,24 @@ p4 <- ggplot(all_years_timeseries_treatment_temp, aes(x = week_group, y = ave_te
   labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.7, width = 15) +
   theme_classic() +
-  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 15), plot.margin = margin(-0.23,0,0,0.21, "cm")) +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y  = element_text(size = 15), axis.title.y = element_text(size = 20), plot.margin = margin(-0.23,0,0,0.21, "cm")) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL))
+  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL))
 
 ##VWC Severity 
 p5 <- ggplot(all_years_timeseries_severity_VWC, aes(x = week_group, y = ave_VWC, group = Severity, color = Severity)) +
   labs(x = "Date", y= "VWC (%)") +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.7, width = 15) +
   theme_classic() +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
   scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
-  theme(axis.text.y = element_text(size = 12.5), axis.title.y = element_text(size = 15), legend.position = "none", axis.text.x = element_text(size = 12.5),  axis.title.x = element_text(size = 12.5), plot.margin = margin(-0.23,0,0,0.35, "cm")) +
+  theme(axis.text.y = element_text(size = 15), axis.title.y = element_text(size = 20), legend.position = "none", axis.text.x = element_text(size = 15),  axis.title.x = element_text(size = 15), plot.margin = margin(-0.23,0,0,0.4, "cm")) +
   guides(color=guide_legend(nrow=2, byrow=TRUE))
   
 
@@ -386,30 +386,32 @@ p6 <- ggplot(all_years_timeseries_treatment_VWC, aes(x = week_group, y = ave_VWC
   labs(x = "Date", y= "VWC (%)") +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
   geom_path(size = 0.5, alpha = 0.9) +
-  geom_point(size = 2) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC)) +
+  geom_point(size = 2.5) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.7, width = 15) +
   theme_classic() +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
-  theme(axis.text.y = element_text(size = 12.5), axis.title.y = element_text(size = 15), legend.position = "none", axis.text.x = element_text(size = 12.5),  axis.title.x = element_text(size = 12.5), plot.margin = margin(-0.23,0,0,0.35, "cm")) +
+  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  theme(axis.text.y  = element_text(size = 15), axis.title.y  = element_text(size = 20), legend.position = "none", axis.text.x = element_text(size = 12.5),  axis.title.x = element_text(size = 15), plot.margin = margin(-0.23,0.20,0,0, "cm")) +
   guides(color=guide_legend(nrow=2, byrow=TRUE))
 
 #Severity multipanel Figure 
 p1_grob <- ggplotGrob(p1)
 p3_grob <- ggplotGrob(p3)
 p5_grob <- ggplotGrob(p5)
-
-layout <- rbind(c(1),
-                c(2), 
-                c(3))
-g_severity <- grid.arrange(p1_grob, p3_grob, p5_grob, layout_matrix=layout)
-
 ##Treatment multipanel figure 
 p2_grob <- ggplotGrob(p2)
 p4_grob <- ggplotGrob(p4)
 p6_grob <- ggplotGrob(p6)
 
-g_treatment <- grid.arrange(p2_grob, p4_grob, p6_grob, layout_matrix=layout)
+layout <- rbind(c(1,2),
+                c(3,4), 
+                c(5,6))
+g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_grob, layout_matrix=layout)
+
+ggsave("Figure_1.png", height = 10, width = 15, units = "in", g_timeseries)
+
+
+
 
 
 
