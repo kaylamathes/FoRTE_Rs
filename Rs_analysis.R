@@ -46,7 +46,7 @@ all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
 
 
 ####Clean Dataframes#####
-#Subset data files for July and August Rs measurements only, leave out comments column and get rid of NA efflux values 
+#leave out notes/comments column and get rid of NA efflux values 
 
 #2018
 all_2018_sub <- all_2018%>%
@@ -244,7 +244,7 @@ all_years <- all_years %>%
 all_years_grouped <- all_years%>%
   mutate(week_group = case_when(date == "2018-07-27" | date == "2018-08-03" ~ "2018-07-07",
                                 date == "2018-08-10" | date == "2018-08-14" ~ "2018-08-10",
-                                date == "2018-11-15" | date == "2018-11-16" | date =="2018-11-17" ~"2018-11-15",
+                                date == "2018-11-15" | date == "2018-11-16" | date =="2018-11-17" ~ "2018-11-15",
                                 date == "2019-05-14" | date == "2019-05-15" ~ "2019-05-14", 
                                 date == "2019-05-21" | date == "2019-05-22" |date == "2019-05-23" | date == "2019-05-24" ~ "2019-05-21", 
                                 date == "2019-06-05" | date == "2019-06-06" | date == "2019-06-07" ~ "2019-06-05", 
@@ -263,8 +263,9 @@ all_years_grouped <- all_years%>%
 ##Make week group date class 
 all_years_grouped$week_group <- as.Date(all_years_grouped$week_group,format="%Y-%m-%d")
 
+##(Rs, soil temp and VWC were separated to get rid of NA values for each factor)
 #####Rs Timeseries 
-###Summarize by subplots (Collars are sudo-replicates)
+###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model (subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary_timeseries <- all_years_grouped%>%
   group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
   summarize(soilCO2Efflux = mean(soilCO2Efflux))
@@ -280,7 +281,7 @@ all_years_timeseries_treatment <- all_years_summary_timeseries%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
 ######Soil Temperature Timeseries 
-###Summarize by subplots (Collars are sudo-replicates)
+###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary_timeseries_temp <- all_years_grouped%>%
   filter(!is.na(soilTemp))%>%
   group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
@@ -298,7 +299,7 @@ all_years_timeseries_treatment_temp <- all_years_summary_timeseries_temp%>%
 
 
 ######Soil Moisture (VWC) Timeseries
-###Summarize by subplots (Collars are sudo-replicates)
+###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary_timeseries_VWC <- all_years_grouped%>%
   filter(!is.na(VWC))%>%
   group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
@@ -414,22 +415,20 @@ ggsave("Figure_1.png", height = 10, width = 15, units = "in", g_timeseries)
 
 
 
-
-
 #######Summarize per year (growing season only)######
 ##Inlude only growing season dates from all years (July and August)
 all_years_gs <- all_years%>%
   filter(date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06") 
 
-###Summarize by subplots (Collars are sudo-replicates)
+###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary <- all_years_gs%>%
-  group_by(Rep_ID, year, Severity, Treatment, Subplot_code)%>%
+  group_by(Rep_ID, year, Severity, Treatment)%>%
   summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
 
 ####Summarize Data by severity (Growing season) ######
 
 ##Summarize severity by replications per year 
-all_years_summary_severity <- all_years_summary%>%
+all_years_summary_severity <- all_years_gs%>%
   group_by(year, Rep_ID, Severity)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
@@ -449,7 +448,7 @@ ggsave("severity_boxplot.png",height = 10, width = 15 , units = "in")
 
 #####Summarize data by Treatment######
 ##Summarize treatment by replications per year 
-all_years_summary_treatment <- all_years_summary%>%
+all_years_summary_treatment <- all_years_gs%>%
   group_by(year, Rep_ID, Treatment)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
@@ -462,6 +461,138 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
   labs(x = "Treatment", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+
+
+
+#########Split plot Model: Agricolae package#####
+library(agricolae)
+library(car)
+library(nlme)
+
+##Assess if any extreme outliers exist, test for normality and equality of variance: With 2018-2020: Only a few non-extreme outliers, normal data and equal variance 
+
+###Outliers: 
+##By severity: no extreme outliers 
+all_years_summary %>% 
+  group_by(Severity) %>%
+  identify_outliers(soilCO2Efflux)
+
+all_years_summary %>% 
+  group_by(Severity) %>%
+  identify_outliers(soilTemp)
+
+all_years_summary %>% 
+  group_by(Severity) %>%
+  identify_outliers(VWC)
+
+##By Treatment: no extreme outliers 
+all_years_summary %>% 
+  group_by(Treatment) %>%
+  identify_outliers(soilCO2Efflux)
+
+all_years_summary %>% 
+  group_by(Treatment) %>%
+  identify_outliers(soilTemp)
+
+all_years_summary %>% 
+  group_by(Treatment) %>%
+  identify_outliers(VWC)
+
+##Normality Test by severity*Year*Treatment: Normal 
+normality_rs <- all_years_summary%>%
+  group_by(Severity, year, Treatment) %>%
+  shapiro_test(soilCO2Efflux)
+
+normality_temp <- all_years_summary%>%    #######This doesn't work!!!! WHY
+  group_by(Severity, year, Treatment)%>%
+  shapiro_test(soilTemp)
+
+normality_VWC <- all_years_summary%>%
+  group_by(Severity, year, Treatment) %>%
+  shapiro_test(VWC)
+
+##Transform variables into factors for equal of variance analysis 
+all_years_summary$Severity <- as.factor(all_years_summary$Severity)
+all_years_summary$Treatment <- as.factor(all_years_summary$Treatment)
+all_years_summary$year <- as.factor(all_years_summary$year)
+
+##Equality of variance test for severity and treatment (Slightly unequal data using alpha = 0.05. Equal variance using alpha = 0.1)
+leveneTest(soilCO2Efflux ~ year*Treatment*Severity, data = all_years_summary)
+leveneTest(VWC ~ year*Treatment*Severity, data = all_years_summary)
+leveneTest(soilTemp ~ year*Treatment*Severity, data = all_years_summary)
+
+
+##Run split plot models for Rs, temperature, moisture as dependent variables 
+Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, year, Severity, Treatment, soilCO2Efflux))
+
+Temp_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, soilTemp))
+
+VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, VWC))
+
+
+
+#alternative models
+aov_rs <- aov(soilCO2Efflux ~ Rep_ID  + Severity + Treatment +
+             Error(Rep_ID:(year*Treatment)), data = all_years_summary)
+
+summary(aov_rs)
+
+library(lmerTest)
+fit <- lmer(soilCO2Efflux ~ year * Severity * Treatment + (1 | Rep_ID), data = all_years_summary)
+anova(fit)
+
+##Post-hoc analysis by year 
+gla<-Rsmodel$gl.a
+glb<-Rsmodel$gl.b
+glc<-Rsmodel$gl.c
+
+Ea<-Rsmodel$Ea
+Eb<-Rsmodel$Eb
+Ec<-Rsmodel$Ec
+
+out1<-with(total_rs_model,LSD.test(mean_Rs,Year:Severity,glb,Eb,console=TRUE,alpha = 0.1))
+
+out2 <- with(total_rs_model,LSD.test(mean_Rs,Treatment:Severity,glc,Ec,console=TRUE,alpha = 0.1))
+
+##Graph of severity by treatment breakdown 
+ggplot(all_years_summary,aes(x = Severity, y = Efflux_umol_m2_s, fill = Treatment)) +
+  facet_grid(.~Year,scales="free")+ 
+  scale_fill_manual(values = c("darkgoldenrod4", "forestgreen")) +
+  theme_classic()+
+  geom_boxplot()+
+  theme(axis.text.x= element_text(size = 15), axis.text.y= element_text(size=15), axis.title.x = element_text(size = 15), axis.title.y  = element_text(size=15), legend.title = element_blank(),  strip.text.x =element_text(size = 15), legend.text = element_text(size = 20)) +
+  labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+
+ggsave("Output/treatment_severity.png",height = 10, width = 10, units = "in")
+
+
+##Resistance Graph 
+resistance_graph <- all_years_severity%>%
+  mutate(log_response = case_when(Year == "2018" ~ log(ave_efflux/ave_efflux[1]), 
+                                  Year == "2019" ~ log(ave_efflux/ave_efflux[1]), 
+                                  Year =="2020" ~ log(ave_efflux/ave_efflux[1])))%>%
+  group_by(Year, Severity)%>%
+  summarize(ave_log_response = mean(log_response), std_err = std.error(log_response))
+
+
+lr_plot <- ggplot(resistance_graph, aes(x = Year, y = ave_log_response, color = Severity)) +
+  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  theme_classic()+
+  geom_point(size = 3)+
+  geom_path(size = 1)+
+  scale_x_continuous(breaks = c(2018,2019,2020), sec.axis = sec_axis(~ .,labels = NULL,breaks = c(2018,2019,2020))) +
+  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(0.2, 0.2), plot.margin = margin(1,1,1,1, "cm")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err), width = 0.1)+
+  labs(y = "Rs Resistance")
+ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
+
+g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25))
+ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
+
+
+
+
 
 #######Cross-year soil micrometerology comparison: Compare soil temperature, moisture and Rs in the control across years######
 
@@ -595,122 +726,3 @@ g <- arrangeGrob(p1, p2, p3,ncol=1)
 plot(timeseries)
 
 ggsave("Output/control_temp_moist_efflux.png",height = 15, width = 7, units = "in", g)
-
-
-
-
-
-#########Split plot Model for Rs with Disturbance severity and treatment for each year: Agricolae package#####
-library(agricolae)
-library(car)
-
-##Assess if any extreme outliers exist, test for normality and equality of variance: With 2018-2020: Only a few non-extreme outliers, normal data and equal variance 
-###Outliers: 
-##By severity: 1, not extreme 
-all_years_summary %>% 
-  group_by(Severity) %>%
-  identify_outliers(soilCO2Efflux)
-
-##By Treatment: 3, not extreme
-all_years_summary %>% 
-  group_by(Treatment) %>%
-  identify_outliers(soilCO2Efflux)
-
-##Eliminate outliers from treatment [Why would I eliminate if not extreme??]
-all_years_3 <- all_years_2%>%
-  filter(Efflux < 9.3)
-
-##Normality Test by severity*Year*Treatment: Normal 
-normality <- all_years_summary%>%
-  group_by(Severity, year, Treatment) %>%
-  shapiro_test(soilCO2Efflux)
-
-##Transfrom variables into factors for equal of variance analysis 
-all_years_summary$Severity <- as.factor(all_years_summary$Severity)
-all_years_summary$Treatment <- as.factor(all_years_summary$Treatment)
-all_years_summary$year <- as.factor(all_years_summary$year)
-
-##Equality of variance test for severity and treatment 
-leveneTest(soilCO2Efflux ~ year*Treatment*Severity, data = all_years_summary)
-
-##Create Rs model dataset  
-total_rs_model <-  all_years_summary%>%
-  filter(!is.na(soilCO2Efflux))%>%
-  group_by(year, Rep_ID, Severity, Treatment)%>%
-  summarize(mean_Rs = mean(soilCO2Efflux))%>%
-  ungroup()
-
-##Create temp model dataset  
-total_temp_model <-  all_years_summary%>%
-  filter(!is.na(soilTemp))%>%
-  group_by(year, Rep_ID, Severity, Treatment)%>%
-  summarize(mean_temp = mean(soilTemp))%>%
-  ungroup()
-
-##Create VWC model dataset  
-total_VWC_model <-  all_years_summary%>%
-  filter(!is.na(VWC))%>%
-  group_by(year, Rep_ID, Severity, Treatment)%>%
-  summarize(mean_VWC = mean(VWC))%>%
-  ungroup()
-
-
-
-##Run split plot Model 
-Rsmodel <- with(total_rs_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_Rs))
-
-Temp_model <- with(total_temp_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_temp))
-
-VWC_model <- with(total_VWC_model, ssp.plot(Rep_ID, year, Severity, Treatment, mean_VWC))
-
-##Post-hoc analysis by year 
-gla<-Rsmodel$gl.a
-glb<-Rsmodel$gl.b
-glc<-Rsmodel$gl.c
-
-Ea<-Rsmodel$Ea
-Eb<-Rsmodel$Eb
-Ec<-Rsmodel$Ec
-
-out1<-with(total_rs_model,LSD.test(mean_Rs,Year:Severity,glb,Eb,console=TRUE,alpha = 0.1))
-
-out2 <- with(total_rs_model,LSD.test(mean_Rs,Treatment:Severity,glc,Ec,console=TRUE,alpha = 0.1))
-
-##Graph of severity by treatment breakdown 
-ggplot(all_years_summary,aes(x = Severity, y = Efflux_umol_m2_s, fill = Treatment)) +
-  facet_grid(.~Year,scales="free")+ 
-  scale_fill_manual(values = c("darkgoldenrod4", "forestgreen")) +
-  theme_classic()+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 15), axis.text.y= element_text(size=15), axis.title.x = element_text(size = 15), axis.title.y  = element_text(size=15), legend.title = element_blank(),  strip.text.x =element_text(size = 15), legend.text = element_text(size = 20)) +
-  labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
-
-ggsave("Output/treatment_severity.png",height = 10, width = 10, units = "in")
-
-
-##Resistance Graph 
-resistance_graph <- all_years_severity%>%
-  mutate(log_response = case_when(Year == "2018" ~ log(ave_efflux/ave_efflux[1]), 
-                                  Year == "2019" ~ log(ave_efflux/ave_efflux[1]), 
-                                  Year =="2020" ~ log(ave_efflux/ave_efflux[1])))%>%
-  group_by(Year, Severity)%>%
-  summarize(ave_log_response = mean(log_response), std_err = std.error(log_response))
-
-
-lr_plot <- ggplot(resistance_graph, aes(x = Year, y = ave_log_response, color = Severity)) +
-  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
-  theme_classic()+
-  geom_point(size = 3)+
-  geom_path(size = 1)+
-  scale_x_continuous(breaks = c(2018,2019,2020), sec.axis = sec_axis(~ .,labels = NULL,breaks = c(2018,2019,2020))) +
-  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(0.2, 0.2), plot.margin = margin(1,1,1,1, "cm")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err), width = 0.1)+
-  labs(y = "Rs Resistance")
-ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
-
-g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25))
-ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
-
-
-
