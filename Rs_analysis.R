@@ -432,6 +432,19 @@ all_years_summary_severity <- all_years_gs%>%
   group_by(year, Rep_ID, Severity)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
+all_years_summary_severity$year <- as.factor(all_years_summary_severity$year)
+
+all_years_summary_ameriflux <- all_years_summary_severity%>%
+  mutate(pre_post = case_when(year == "2018" ~ "Pre-Disturbance", 
+                              year == "2019" | year == "2020" | year == "2021" ~ "Post-Disturbance")) 
+                                                  
+all_years_summary_ameriflux <- all_years_summary_ameriflux%>%
+  group_by(pre_post, Rep_ID, Severity)%>%
+  summarize(ave_efflux = mean(ave_efflux), std_error_efflux = std.error(std_error_efflux))
+  
+  
+  
+
 ######Visualize Rs data by severity by Year####
 ##Boxplot of replicate averages across disturbance severity per year 
 splot <- ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Severity)) +
@@ -445,6 +458,17 @@ splot <- ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fil
   labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
 ggsave("severity_boxplot.png",height = 10, width = 15 , units = "in")
 
+###Boxplot of replicate averagers across disturbance severity post and Post(mean of 2019-2021)
+ggplot(all_years_summary_ameriflux, aes(x = Severity, y = ave_efflux, fill = Severity)) +
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  theme_classic()+
+  geom_boxplot()+
+  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",plot.margin = margin(1,1,1,1, "cm")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  facet_grid(~factor(pre_post,levels=c("Pre-Disturbance","Post-Disturbance")))+ 
+  guides(col = guide_legend(nrow = 2)) +
+  labs(x = "Disturbance Severity:Gross defoliation (%)", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+ggsave("severity_boxplot_ameriflux.png",height = 10, width = 15 , units = "in")
 
 #####Summarize data by Treatment######
 ##Summarize treatment by replications per year 
