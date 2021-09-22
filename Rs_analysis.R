@@ -547,23 +547,18 @@ leveneTest(soilTemp ~ year*Treatment*Severity, data = all_years_summary)
 
 
 ##Run split plot models for Rs, temperature, moisture as dependent variables 
-Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, year, Severity, Treatment, soilCO2Efflux))
+Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, Severity, Treatment, year, soilCO2Efflux))
 
 Temp_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, soilTemp))
 
 VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, VWC))
 
 
-
-#alternative models
-aov_rs <- aov(soilCO2Efflux ~ Rep_ID  + Severity + Treatment +
-             Error(Rep_ID:(year*Treatment)), data = all_years_summary)
+#alternative models (This one works, but the error df are different from the split-split plot model design). This is an ANCOVA with moisture as a covariate 
+aov_rs <- aov(soilCO2Efflux ~ VWC + (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)), data = all_years_summary)
 
 summary(aov_rs)
 
-library(lmerTest)
-fit <- lmer(soilCO2Efflux ~ year * Severity * Treatment + (1 | Rep_ID), data = all_years_summary)
-anova(fit)
 
 ##Post-hoc analysis by year 
 gla<-Rsmodel$gl.a
