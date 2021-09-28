@@ -423,7 +423,7 @@ all_years_gs <- all_years%>%
 ###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary <- all_years_gs%>%
   group_by(Rep_ID, year, Severity, Treatment)%>%
-  summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp), VWC =mean(VWC))
+  summarize(soilCO2Efflux = mean(soilCO2Efflux), soilTemp = mean(soilTemp, na.rm=TRUE), VWC =mean(VWC))
 
 ####Summarize Data by severity (Growing season) ######
 
@@ -546,6 +546,7 @@ leveneTest(VWC ~ year*Treatment*Severity, data = all_years_summary)
 leveneTest(soilTemp ~ year*Treatment*Severity, data = all_years_summary)
 
 
+
 ##Run split plot models for Rs, temperature, moisture as dependent variables 
 Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, Severity, Treatment, year, soilCO2Efflux))
 
@@ -555,7 +556,7 @@ VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment,
 
 
 #alternative models (This one works, but the error df are different from the split-split plot model design). This is an ANCOVA with moisture as a covariate 
-aov_rs <- aov(soilCO2Efflux ~ VWC + (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)), data = all_years_summary)
+aov_rs <- aov(soilCO2Efflux ~ (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)) + VWC, data = all_years_summary)
 
 summary(aov_rs)
 
@@ -585,11 +586,34 @@ ggplot(all_years_summary,aes(x = Severity, y = Efflux_umol_m2_s, fill = Treatmen
 ggsave("Output/treatment_severity.png",height = 10, width = 10, units = "in")
 
 
-##Resistance Graph 
-resistance_graph <- all_years_severity%>%
-  mutate(log_response = case_when(Year == "2018" ~ log(ave_efflux/ave_efflux[1]), 
-                                  Year == "2019" ~ log(ave_efflux/ave_efflux[1]), 
-                                  Year =="2020" ~ log(ave_efflux/ave_efflux[1])))%>%
+##Relationship between moisture and Rs 
+ggplot(data = all_years_summary,aes( x = VWC, y = soilCO2Efflux)) +
+  geom_point() +
+  theme_classic()
+
+
+
+
+#########Calculating Resistance ######
+resistance_graph_2018 <- all_years_summary_severity%>%
+  filter(year == 2018)%>%
+  mutate(log_response = case_when(Rep_ID == "A" ~ log(ave_efflux/[1,4]),
+                                  Rep_ID == "B" ~ log(ave_efflux/ave_efflux[5,4]),
+                                  Rep_ID == "C" ~ log(ave_efflux/ave_efflux[9,4]),
+                                  Rep_ID == "D" ~ log(ave_efflux/ave_efflux[13,4])))
+                                  
+                                  year == "2019" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[17,]),
+                                  year == "2019" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[21,]),
+                                  year == "2019" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[25,]),
+                                  year == "2019" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[29,]),
+                                  year =="2020" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[33,]),
+                                  year =="2020" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[37,]),
+                                  year =="2020" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[41,]),
+                                  year =="2020" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[45,]),
+                                  year =="2021" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[49,]),
+                                  year =="2021" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[53,]),
+                                  year =="2021" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[57,]),
+                                  year =="2021" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[61,])))
   group_by(Year, Severity)%>%
   summarize(ave_log_response = mean(log_response), std_err = std.error(log_response))
 
