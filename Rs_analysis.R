@@ -18,6 +18,7 @@ library(lubridate)
 library(scales)
 library(rcartocolor)
 library(gridExtra)
+library(viridis)    
 
 
 
@@ -595,38 +596,84 @@ ggplot(data = all_years_summary,aes( x = VWC, y = soilCO2Efflux)) +
 
 
 #########Calculating Resistance ######
-resistance_graph_2018 <- all_years_summary_severity%>%
-  filter(year == 2018)%>%
-  mutate(log_response = case_when(Rep_ID == "A" ~ log(ave_efflux/[1,4]),
-                                  Rep_ID == "B" ~ log(ave_efflux/ave_efflux[5,4]),
-                                  Rep_ID == "C" ~ log(ave_efflux/ave_efflux[9,4]),
-                                  Rep_ID == "D" ~ log(ave_efflux/ave_efflux[13,4])))
-                                  
-                                  year == "2019" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[17,]),
-                                  year == "2019" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[21,]),
-                                  year == "2019" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[25,]),
-                                  year == "2019" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[29,]),
-                                  year =="2020" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[33,]),
-                                  year =="2020" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[37,]),
-                                  year =="2020" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[41,]),
-                                  year =="2020" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[45,]),
-                                  year =="2021" & Rep_ID == "A" ~ log(ave_efflux/ave_efflux[49,]),
-                                  year =="2021" & Rep_ID == "B" ~ log(ave_efflux/ave_efflux[53,]),
-                                  year =="2021" & Rep_ID == "C" ~ log(ave_efflux/ave_efflux[57,]),
-                                  year =="2021" & Rep_ID == "D" ~ log(ave_efflux/ave_efflux[61,])))
-  group_by(Year, Severity)%>%
+resistance_rs <- all_years_summary_severity
+
+
+  resistance_rs <- resistance_rs%>%
+    mutate(log_response = case_when(year == "2018" & Rep_ID == "A" ~ log(ave_efflux/resistance_rs$ave_efflux[1]),
+                                  year == "2018" & Rep_ID == "B" ~ log(ave_efflux/resistance_rs$ave_efflux[5]),
+                                  year == "2018" & Rep_ID == "C" ~ log(ave_efflux/resistance_rs$ave_efflux[9]),
+                                  year == "2018" & Rep_ID == "D" ~ log(ave_efflux/resistance_rs$ave_efflux[13]),
+                                  year == "2019" & Rep_ID == "A" ~ log(ave_efflux/resistance_rs$ave_efflux[17]),
+                                  year == "2019" & Rep_ID == "B" ~ log(ave_efflux/resistance_rs$ave_efflux[21]),
+                                  year == "2019" & Rep_ID == "C" ~ log(ave_efflux/resistance_rs$ave_efflux[25]),
+                                  year == "2019" & Rep_ID == "D" ~ log(ave_efflux/resistance_rs$ave_efflux[29]),
+                                  year =="2020" & Rep_ID == "A" ~ log(ave_efflux/resistance_rs$ave_efflux[33]),
+                                  year =="2020" & Rep_ID == "B" ~ log(ave_efflux/resistance_rs$ave_efflux[37]),
+                                  year =="2020" & Rep_ID == "C" ~ log(ave_efflux/resistance_rs$ave_efflux[41]),
+                                  year =="2020" & Rep_ID == "D" ~ log(ave_efflux/resistance_rs$ave_efflux[45]),
+                                  year =="2021" & Rep_ID == "A" ~ log(ave_efflux/resistance_rs$ave_efflux[49]),
+                                  year =="2021" & Rep_ID == "B" ~ log(ave_efflux/resistance_rs$ave_efflux[53]),
+                                  year =="2021" & Rep_ID == "C" ~ log(ave_efflux/resistance_rs$ave_efflux[57]),
+                                  year =="2021" & Rep_ID == "D" ~ log(ave_efflux/resistance_rs$ave_efflux[61])))%>%
+  group_by(year, Severity)%>%
   summarize(ave_log_response = mean(log_response), std_err = std.error(log_response))
+  
+  
+resistance_rs$Severity <- as.numeric(resistance_rs$Severity)
 
+##Run regression analysis for Rs resistance by severity per year: 2019,2020, 2021 all have significant linear decline with increasing disturbance severity. The slopes for each year post disturbance are not statistically different (overlapping 95% CI), but they are all significantly different than 2018. 
 
-lr_plot <- ggplot(resistance_graph, aes(x = Year, y = ave_log_response, color = Severity)) +
-  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+#2018
+regression_2018 <- resistance_rs%>%
+  filter(year == 2018)
+
+regression_2018_model <- lm(ave_log_response ~ Severity, data = regression_2018)
+summary(regression_2018_model)
+
+confint(regression_2018_model, 'Severity', level=0.95)
+
+#2019
+regression_2019 <- resistance_rs%>%
+  filter(year == 2019)
+
+regression_2019_model <- lm(ave_log_response ~ Severity, data = regression_2019)
+summary(regression_2019_model)
+
+confint(regression_2019_model, 'Severity', level=0.95)
+
+#2020
+regression_2020 <- resistance_rs%>%
+  filter(year == 2020)
+
+regression_2020_model <- lm(ave_log_response ~ Severity, data = regression_2020)
+summary(regression_2020_model)
+
+confint(regression_2020_model, 'Severity', level=0.95)
+
+#2021
+regression_2021 <- resistance_rs%>%
+  filter(year == 2021)
+
+regression_2021_model <- lm(ave_log_response ~ Severity, data = regression_2021)
+summary(regression_2021_model)
+
+confint(regression_2021_model, 'Severity', level=0.95)
+
+resistance_rs <- resistance_rs%>%
+  mutate(pre_post = case_when(year == "2018" ~ "pre", 
+                              year == "2019" | year == "2020" | year == "2021" ~ "post"))
+
+###Plot Rs resistance by severity per year 
+ggplot(resistance_rs, aes(x = Severity, y = ave_log_response)) +
   theme_classic()+
-  geom_point(size = 3)+
-  geom_path(size = 1)+
-  scale_x_continuous(breaks = c(2018,2019,2020), sec.axis = sec_axis(~ .,labels = NULL,breaks = c(2018,2019,2020))) +
-  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(0.2, 0.2), plot.margin = margin(1,1,1,1, "cm")) +
+  geom_point(aes(colour = year), size = 3)+
+  scale_color_manual(values=c("#A6761D", "#1B9E77", "#D95F02", "#7570B3")) +
+  geom_smooth(method = "lm", se = FALSE, aes(linetype = pre_post), color = "black")+
+  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(0.2, 0.3)) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err), width = 0.1)+
+  scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), width = 3)+
   labs(y = "Rs Resistance")
 ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
 
