@@ -495,72 +495,44 @@ library(agricolae)
 library(car)
 library(nlme)
 
-##Assess if any extreme outliers exist, test for normality and equality of variance: With 2018-2020: Only a few non-extreme outliers, normal data and equal variance 
-
-###Outliers: 
-##By severity: no extreme outliers 
-all_years_summary %>% 
-  group_by(Severity) %>%
-  identify_outliers(soilCO2Efflux)
-
-all_years_summary %>% 
-  group_by(Severity) %>%
-  identify_outliers(soilTemp)
-
-all_years_summary %>% 
-  group_by(Severity) %>%
-  identify_outliers(VWC)
-
-##By Treatment: no extreme outliers 
-all_years_summary %>% 
-  group_by(Treatment) %>%
-  identify_outliers(soilCO2Efflux)
-
-all_years_summary %>% 
-  group_by(Treatment) %>%
-  identify_outliers(soilTemp)
-
-all_years_summary %>% 
-  group_by(Treatment) %>%
-  identify_outliers(VWC)
-
-##Normality Test by severity*Year*Treatment: Normal 
-normality_rs <- all_years_summary%>%
-  group_by(Severity, year, Treatment) %>%
-  shapiro_test(soilCO2Efflux)
-
-normality_temp <- all_years_summary%>%    
-  group_by(Severity, year, Treatment)%>%
-  shapiro_test(soilTemp)
-
-normality_VWC <- all_years_summary%>%
-  group_by(Severity, year, Treatment) %>%
-  shapiro_test(VWC)
-
-##Transform variables into factors for equal of variance analysis 
+##Transform variables into factors for model 
 all_years_summary$Severity <- as.factor(all_years_summary$Severity)
 all_years_summary$Treatment <- as.factor(all_years_summary$Treatment)
 all_years_summary$year <- as.factor(all_years_summary$year)
 
+####Testing Assumptions 
+##Test for outliers test: no extreme outliers
+all_years_summary %>% 
+  group_by(Severity, Treatment, year) %>%
+  identify_outliers(soilCO2Efflux)
+
 ##Equality of variance test for severity and treatment (Slightly unequal data using alpha = 0.05. Equal variance using alpha = 0.1)
 leveneTest(soilCO2Efflux ~ year*Treatment*Severity, data = all_years_summary)
-leveneTest(VWC ~ year*Treatment*Severity, data = all_years_summary)
-leveneTest(soilTemp ~ year*Treatment*Severity, data = all_years_summary)
+
+##Normality (Data are normal)
+# Build the linear model
+normality_test  <- lm(soilCO2Efflux ~ Severity*Treatment*year,
+                      data = all_years_summary)
+
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test))
 
 
+####WORKING SPLIT-SPLIT MODEL: Using aov(). Same results as the agricolae package. Ran an ANCOVA with VWC as a covariate.(However significance does not change with or without VWC). 
+rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 
+summary(rs_model)
+
+
+##Older split-split model using agricolae package 
 ##Run split plot models for Rs, temperature, moisture as dependent variables 
 Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, Severity, Treatment, year, soilCO2Efflux))
 
 Temp_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, soilTemp))
 
 VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, VWC))
-
-
-#alternative models (This one works, but the error df are different from the split-split plot model design). This is an ANCOVA with moisture as a covariate (However significance does not change when VWC is left out or put in)
-aov_rs <- aov(soilCO2Efflux ~ (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)) +VWC, data = all_years_summary)
-
-summary(aov_rs)
 
 
 ##Post-hoc analysis by year 
@@ -574,24 +546,7 @@ Ec<-Rsmodel$Ec
 
 out1<-with(total_rs_model,LSD.test(mean_Rs,Year:Severity,glb,Eb,console=TRUE,alpha = 0.1))
 
-out2 <- with(total_rs_model,LSD.test(mean_Rs,Treatment:Severity,glc,Ec,console=TRUE,alpha = 0.1))
-
-##Graph of severity by treatment breakdown 
-ggplot(all_years_summary,aes(x = Severity, y = Efflux_umol_m2_s, fill = Treatment)) +
-  facet_grid(.~Year,scales="free")+ 
-  scale_fill_manual(values = c("darkgoldenrod4", "forestgreen")) +
-  theme_classic()+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 15), axis.text.y= element_text(size=15), axis.title.x = element_text(size = 15), axis.title.y  = element_text(size=15), legend.title = element_blank(),  strip.text.x =element_text(size = 15), legend.text = element_text(size = 20)) +
-  labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
-
-ggsave("Output/treatment_severity.png",height = 10, width = 10, units = "in")
-
-
-##Relationship between moisture and Rs 
-ggplot(data = all_years_summary,aes( x = VWC, y = soilCO2Efflux)) +
-  geom_point() +
-  theme_classic()
+out2 <- with(total_rs_model,LSD.test(mean_Rs,Treatment:Severity,glc,Ec,console=TRUE,alpha = 0.1)
 
 
 
