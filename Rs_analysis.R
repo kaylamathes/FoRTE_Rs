@@ -18,7 +18,8 @@ library(lubridate)
 library(scales)
 library(rcartocolor)
 library(gridExtra)
-library(viridis)    
+library(gvlma)  ##Checking linear regression assumptions
+
 
 
 
@@ -489,7 +490,7 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
 
 
 
-#########Split plot Model: Agricolae package#####
+#########Split plot Model for absolute data#####
 library(agricolae)
 library(car)
 library(nlme)
@@ -528,7 +529,7 @@ normality_rs <- all_years_summary%>%
   group_by(Severity, year, Treatment) %>%
   shapiro_test(soilCO2Efflux)
 
-normality_temp <- all_years_summary%>%    #######This doesn't work!!!! WHY
+normality_temp <- all_years_summary%>%    
   group_by(Severity, year, Treatment)%>%
   shapiro_test(soilTemp)
 
@@ -556,8 +557,8 @@ Temp_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment
 VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, VWC))
 
 
-#alternative models (This one works, but the error df are different from the split-split plot model design). This is an ANCOVA with moisture as a covariate 
-aov_rs <- aov(soilCO2Efflux ~ (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)) + VWC, data = all_years_summary)
+#alternative models (This one works, but the error df are different from the split-split plot model design). This is an ANCOVA with moisture as a covariate (However significance does not change when VWC is left out or put in)
+aov_rs <- aov(soilCO2Efflux ~ (Severity*Treatment*year) + Error(Rep_ID/(Severity*Treatment*year)) +VWC, data = all_years_summary)
 
 summary(aov_rs)
 
@@ -664,21 +665,41 @@ resistance_rs <- resistance_rs%>%
   mutate(pre_post = case_when(year == "2018" ~ "pre", 
                               year == "2019" | year == "2020" | year == "2021" ~ "post"))
 
-###Plot Rs resistance by severity per year 
+###Since there are overlapping 95% CI for 2019-2021, we aggregated all years together into the average slope across all years post disturbance and ran a regression analysis as a function of severity 
+
+##Make model dataframe
+pre_post_model_df <- resistance_rs%>%
+  filter(pre_post == "post")
+
+#linear regression
+pre_post_model <- lm(ave_log_response ~ Severity, data = pre_post_model_df)
+summary(pre_post_model)
+
+##graph model diagnostics
+par(mfrow = c(2, 2))
+plot(pre_post_model)
+
+##Test model assumptions (all are met)
+gvlma::gvlma(pre_post_model)
+
+
+###Plot Rs resistance by severity per year with regression line representing average slope post disturbance years 
 ggplot(resistance_rs, aes(x = Severity, y = ave_log_response)) +
   theme_classic()+
   geom_point(aes(colour = year), size = 3)+
-  scale_color_manual(values=c("#A6761D", "#1B9E77", "#D95F02", "#7570B3")) +
-  geom_smooth(method = "lm", se = FALSE, aes(linetype = pre_post), color = "black")+
-  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(0.2, 0.3)) +
+  scale_color_manual(values=c("#000000", "#1B9E77", "#D95F02", "#7570B3")) +
+  geom_smooth(method = "lm", se = FALSE, aes(linetype = pre_post), color = "black", size = 0.5, show.legend = FALSE, alpha = 0.2)+
+  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(.2,.25)) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), width = 3)+
-  labs(y = "Rs Resistance")
+  labs(y = "Rs Resistance") 
+ 
 ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
 
 g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25))
 ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
+
 
 
 
