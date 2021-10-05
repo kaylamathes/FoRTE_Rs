@@ -492,8 +492,6 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
 
 #########Split plot Model for absolute data#####
 library(agricolae)
-library(car)
-library(nlme)
 
 ##Transform variables into factors for model 
 all_years_summary$Severity <- as.factor(all_years_summary$Severity)
@@ -521,34 +519,39 @@ shapiro_test(residuals(normality_test))
 
 
 ####WORKING SPLIT-SPLIT MODEL: Using aov(). Same results as the agricolae package. Ran an ANCOVA with VWC as a covariate.(However significance does not change with or without VWC). 
-rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 
+#Rs Model without covariates
+rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 summary(rs_model)
 
+#Rs model with VWC covariate
+rs_model_VWC <- aov(soilCO2Efflux  ~ Severity*Treatment*year +VWC + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
+summary(rs_model_VWC)
 
-##Older split-split model using agricolae package 
-##Run split plot models for Rs, temperature, moisture as dependent variables 
-Rsmodel <- with(all_years_summary,ssp.plot(Rep_ID, Severity, Treatment, year, soilCO2Efflux))
+#Rs model with Temp covariate
+rs_model_temp <- aov(soilCO2Efflux  ~ Severity*Treatment*year +soilTemp + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
+summary(rs_model_temp)
 
-Temp_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, soilTemp))
+###Moisture model 
+VWC_model <- aov(VWC  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
+summary(VWC_model)
 
-VWC_model <- with(all_years_summary, ssp.plot(Rep_ID, year, Severity, Treatment, VWC))
+#Temperature Model
+temp_model <- aov(soilTemp  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
+summary(temp_model)
 
+######Post hoc analysis: LSD test for Rs/VWC/temp models without covariates for all significant values in the model
 
-##Post-hoc analysis by year 
-gla<-Rsmodel$gl.a
-glb<-Rsmodel$gl.b
-glc<-Rsmodel$gl.c
+#Rs model
+out_year_severity_rs <- with(all_years_summary, LSD.test(soilCO2Efflux, year:Severity,72,0.703, console = TRUE))
 
-Ea<-Rsmodel$Ea
-Eb<-Rsmodel$Eb
-Ec<-Rsmodel$Ec
+out_year_rs <- with(all_years_summary,LSD.test(soilCO2Efflux,year,72,0.703,console=TRUE))
 
-out1<-with(total_rs_model,LSD.test(mean_Rs,Year:Severity,glb,Eb,console=TRUE,alpha = 0.1))
+#VWC Model
+out_year_VWC <- with(all_years_summary,LSD.test(VWC,year,72,0.76,console=TRUE))
 
-out2 <- with(total_rs_model,LSD.test(mean_Rs,Treatment:Severity,glc,Ec,console=TRUE,alpha = 0.1)
-
-
+#Temp Model
+out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=TRUE))
 
 
 #########Calculating Resistance ######
