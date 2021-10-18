@@ -610,7 +610,7 @@ summary(regression_2020_model)
 
 confint(regression_2020_model, 'Severity', level=0.95)
 
-#2021
+#2021 yeah baby
 regression_2021 <- resistance_rs%>%
   filter(year == 2021)
 
