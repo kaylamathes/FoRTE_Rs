@@ -23,7 +23,7 @@ library(gvlma)  ##Checking linear regression assumptions
 
 
 
-######Download Rs data for 2018-2021 from Google Drive####
+######Download Rs and Rh data for 2018-2021 from Google Drive####
 
 # Direct Google Drive link to "FoRTE/data/soil_respiration/2021"
 as_id("https://drive.google.com/drive/folders/1NVO0DUmR_JcYTzw2vq4D9TNItxqM_fp9") %>% 
@@ -45,6 +45,9 @@ all_2018 <- read.csv("googledrive_data/Rs_2018.csv", na.strings = c("NA", "na"))
 all_2019 <- read.csv("googledrive_data/Rs_2019.csv", na.strings = c("NA","na"))
 all_2020 <- read.csv("googledrive_data/Rs_2020.csv", na.strings = c("NA","na"))
 all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
+Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
+Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
+Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na"))
 
 
 ####Clean Dataframes#####
@@ -659,6 +662,18 @@ g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25
 ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
 
 
+#####Heterotrophic Respiration Analysis 2019-2021#######
+##Clean Dataframe 
+
+##combine all years into one dataframe
+
+##Convert data to POSIX Class 
+
+##Combine Rep, plot, and subplot to create subplot_code variable 
+
+##Create Severity column from subplot_code options
+
+##Create Treatment column from subplot_code options 
 
 
 
