@@ -46,8 +46,8 @@ all_2019 <- read.csv("googledrive_data/Rs_2019.csv", na.strings = c("NA","na"))
 all_2020 <- read.csv("googledrive_data/Rs_2020.csv", na.strings = c("NA","na"))
 all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
 Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
-Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
 Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na"))
+Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na"))
 
 
 ####Clean Dataframes#####
@@ -664,19 +664,64 @@ ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
 
 #####Heterotrophic Respiration Analysis 2019-2021#######
 ##Clean Dataframe 
+#2019
+Rh_2019 <- Rh_2019%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+  filter(!is.na(soilCO2Efflux))
 
-##combine all years into one dataframe
+#2020
+Rh_2020 <- Rh_2020%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+  filter(!is.na(soilCO2Efflux))
 
-##Convert data to POSIX Class 
+#2021
+Rh_2021 <- Rh_2021%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+  filter(!is.na(soilCO2Efflux))
+Rh_2021 <- Rh_2021[-c(249),]
 
-##Combine Rep, plot, and subplot to create subplot_code variable 
+#####Combine all years into one dataset 
+all_years_Rh <- rbind(Rh_2019, Rh_2020, Rh_2021)
 
-##Create Severity column from subplot_code options
+##Convert date into POSIXct class and add just a year column 
+all_years_Rh$date_measured <- as.POSIXct(all_years_Rh$date_measured,format="%Y-%m-%d")
+all_years_Rh$year <- format(all_years_Rh$date, format = "%Y")
 
-##Create Treatment column from subplot_code options 
+
+##Combine Rep_ID, Plot_ID and Subplot into one column to create "subplot_code" column 
+all_years_Rh$Subplot_code <- str_c(all_years_Rh$Rep_ID, '',all_years_Rh$Plot_ID,'', all_years_Rh$Subplot)
 
 
+##Add disturbance severity column to dataset
+all_years_Rh <- all_years_Rh%>%
+  mutate(Severity = sapply(Subplot_code, Plot_conversion))
 
+
+##Add treatment column to datasets
+all_years_Rh <- all_years_Rh %>%
+  mutate(Treatment = sapply(Subplot_code, Sub_plot_conversion))
+
+all_years_Rh$soilCO2Efflux <- as.numeric(all_years_Rh$soilCO2Efflux)
+all_years_Rh$Severity <- as.factor(all_years_Rh$Severity)
+all_years_Rh_severity <- all_years_Rh%>%
+  filter(!is.na(soilCO2Efflux))%>%
+  group_by(Rep_ID, year, Severity)%>%
+  summarize(ave_soilCO2Efflux = mean(soilCO2Efflux))
+
+ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux, fill = Severity)) +
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  theme_classic()+
+  geom_boxplot()+
+  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",plot.margin = margin(1,1,1,1, "cm")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  guides(col = guide_legend(nrow = 2)) +
+  facet_grid(.~year,scales="free")+ 
+  labs(x = "Disturbance Severity:Gross defoliation (%)", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+
+
+#Rh Model 
+rh_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh)
+summary(rh_model)
 
 #######Cross-year soil micrometerology comparison: Compare soil temperature, moisture and Rs in the control across years######
 
