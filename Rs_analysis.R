@@ -46,8 +46,8 @@ all_2019 <- read.csv("googledrive_data/Rs_2019.csv", na.strings = c("NA","na"))
 all_2020 <- read.csv("googledrive_data/Rs_2020.csv", na.strings = c("NA","na"))
 all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
 Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
-Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na"))
-Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na"))
+Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na", "#VALUE!"))
+Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na", "#VALUE!"))
 
 
 ####Clean Dataframes#####
@@ -665,23 +665,23 @@ ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
 #####Heterotrophic Respiration Analysis 2019-2021#######
 ##Clean Dataframe 
 #2019
-Rh_2019 <- Rh_2019%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+Rh_2019_sub <- Rh_2019%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured,oven.air.weight.ratio)%>%
   filter(!is.na(soilCO2Efflux))
 
 #2020
-Rh_2020 <- Rh_2020%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+Rh_2020_sub <- Rh_2020%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio)%>%
   filter(!is.na(soilCO2Efflux))
 
 #2021
-Rh_2021 <- Rh_2021%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured)%>%
+Rh_2021_sub <- Rh_2021%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio)%>%
   filter(!is.na(soilCO2Efflux))
 Rh_2021 <- Rh_2021[-c(249),]
 
 #####Combine all years into one dataset 
-all_years_Rh <- rbind(Rh_2019, Rh_2020, Rh_2021)
+all_years_Rh <- rbind(Rh_2019_sub, Rh_2020_sub, Rh_2021_sub)
 
 ##Convert date into POSIXct class and add just a year column 
 all_years_Rh$date_measured <- as.POSIXct(all_years_Rh$date_measured,format="%Y-%m-%d")
@@ -718,10 +718,52 @@ ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux, fill = Se
   facet_grid(.~year,scales="free")+ 
   labs(x = "Disturbance Severity:Gross defoliation (%)", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
 
+##Testing water content with Rh
+all_years_Rh <- all_years_Rh%>%
+  mutate(water_content_percent = (1-oven.air.weight.ratio)*100)
+
+VWC_Rh_model <- lm(soilCO2Efflux ~ water_content_percent, data = all_years_Rh)
+summary(VWC_Rh_model)
+
+ggplot(all_years_Rh, aes(x = water_content_percent, y =soilCO2Efflux )) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_point() +
+  theme_classic() 
 
 #Rh Model 
-rh_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh)
+####Testing Assumptions 
+##Test for outliers test: no extreme outliers
+outliers <- all_years_Rh %>% 
+  group_by(Severity, Treatment) %>%
+  identify_outliers(soilCO2Efflux)
+
+all_years_Rh_no_outlier <- all_years_Rh[-c(34,35,49,50,69,70,77),]
+
+hist(all_years_Rh_no_outlier$soilCO2Efflux)
+
+##Equality of variance test for severity and treatment (Slightly unequal data using alpha = 0.05. Equal variance using alpha = 0.1)
+library(car)
+leveneTest(soilCO2Efflux ~ Severity, data = all_years_Rh_no_outlier)
+
+##Normality (Data are normal)
+# Build the linear model
+normality_test  <- lm(soilCO2Efflux ~ Severity*Treatment*year,
+                      data = all_years_Rh)
+
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test))
+
+
+rh_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + water_content_percent +Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh)
 summary(rh_model)
+
+water_model <- aov(water_content_percent  ~ Severity*Treatment*year  +Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh)
+summary(water_model)
+
+out_year_water <- with(all_years_Rh, LSD.test(water_content_percent, year,48,16.86, console = TRUE))
+
 
 #######Cross-year soil micrometerology comparison: Compare soil temperature, moisture and Rs in the control across years######
 
