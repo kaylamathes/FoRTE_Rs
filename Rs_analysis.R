@@ -18,7 +18,8 @@ library(lubridate)
 library(scales)
 library(rcartocolor)
 library(gridExtra)
-library(gvlma)  ##Checking linear regression assumptions
+library(gvlma)
+library(ggprism)##Checking linear regression assumptions
 
 
 
@@ -327,78 +328,85 @@ p1 <- ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, 
   theme_classic() +
   labs(x = "Date", y=expression(paste(" ",R[s]," (",mu*molCO[2]," ",m^-2," ",sec^-1,")"))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
   theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 20), axis.title.y = element_text(size = 25),legend.text = element_text(size = 20), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0,0,0.33,"cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.7, width = 14) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.9, width = 25) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
   scale_y_continuous(position = "left",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
-  guides(color=guide_legend(nrow=2, byrow=TRUE))
+  guides(color=guide_legend(nrow=2, byrow=TRUE))+
+  annotate("text", x = as.Date("2018-05-15"), y = 9.5, label = "A", size = 8)
+
 
 ##Rs Treatment 
 p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux, group = Treatment, color =Treatment)) +
   theme_classic() +
   labs(x = "Date", y=expression(paste(" ",Rs," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
-  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 20), axis.title.y =  element_text(size = 25),legend.text = element_text(size = 20), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0.17,0, -0.2,"cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.7, width = 14) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
+  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 20), axis.title.y =  element_text(size = 25),legend.text = element_text(size = 20), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0.16,0, -0.2,"cm")) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 0.9, width = 25) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
   scale_y_continuous(position = "right",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
-  guides(color=guide_legend(nrow=2, byrow=TRUE))
+  guides(color=guide_legend(nrow=2, byrow=TRUE)) +
+  annotate("text", x = as.Date("2018-05-15"), y = 8, label = "B", size = 8)
 
 ##Temp Severity 
 p3 <- ggplot(all_years_timeseries_severity_temp, aes(x = week_group, y = ave_temp, group = Severity, color = Severity)) +
   labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.7, width = 14) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.9, width = 25) +
   theme_classic() +
   theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 20), axis.title.y = element_text(size = 25), plot.margin = margin(-0.23,0,0,0.17, "cm")) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL))
+  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  annotate("text", x = as.Date("2018-05-15"), y = 21.5, label = "C", size = 8)
 
 ##Temp Treatment 
 p4 <- ggplot(all_years_timeseries_treatment_temp, aes(x = week_group, y = ave_temp, group = Treatment, color = Treatment)) +
   labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
   (scale_x_date(date_labels = "%b %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.7, width = 14) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 0.9, width = 25) +
   theme_classic() +
   theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y  = element_text(size = 20), axis.title.y = element_text(size = 25), plot.margin = margin(-0.23,0,0,-0.2, "cm")) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL))
+  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  annotate("text", x = as.Date("2018-05-15"), y = 21, label = "D", size = 8)
 
 ##VWC Severity 
 p5 <- ggplot(all_years_timeseries_severity_VWC, aes(x = week_group, y = ave_VWC, group = Severity, color = Severity)) +
   labs(x = "Date", y= "VWC (%)") +
   (scale_x_date(date_labels = "%b \n %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))+
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.7, width = 14) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.9, width = 25) +
   theme_classic() +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
   scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
   theme(axis.text.y = element_text(size = 20), axis.title.y = element_text(size = 25), legend.position = "none", axis.text.x = element_text(size = 20),  axis.title.x = element_blank(), plot.margin = margin(-0.23,0,0,0.37, "cm")) +
-  guides(color=guide_legend(nrow=2, byrow=TRUE))
+  guides(color=guide_legend(nrow=2, byrow=TRUE)) +
+  annotate("text", x = as.Date("2018-05-15"), y = 17, label = "E", size = 8)
   
 
 
 ##VWC Treatment 
 p6 <- ggplot(all_years_timeseries_treatment_VWC, aes(x = week_group, y = ave_VWC, group = Treatment, color = Treatment)) +
   labs(x = "Date", y= "VWC (%)") +
-  geom_path(size = 0.5, alpha = 0.9, linetype = 2) +
-  geom_point(size = 4) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.7, width = 14) +
+  geom_path(size = 1, alpha = 0.9, linetype = 2) +
+  geom_point(size = 6) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 0.9, width = 25) +
   theme_classic() +
   scale_color_manual(values=c("#A6611A", "#018571")) +
   scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
   theme(axis.text.y  = element_text(size = 20), axis.title.y  = element_text(size = 25), legend.position = "none", axis.text.x = element_text(size = 20),  axis.title.x = element_blank(), plot.margin = margin(-0.23,0.20,0,-0.2, "cm"), strip.placement = "outside") +
   guides(color=guide_legend(nrow=2, byrow=TRUE)) +
-   (scale_x_date(date_labels = "%b \n %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")))))
+   (scale_x_date(date_labels = "%b \n %Y", breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15")), sec.axis = sec_axis(~ .,labels = NULL, breaks = as.Date(c("2018-07-15", "2019-01-11", "2019-07-15", "2020-01-11", "2020-07-15", "2021-01-11", "2021-07-15"))))) +
+  annotate("text", x = as.Date("2018-05-15"), y = 16.5, label = "F", size = 8)
 
 #Severity multipanel Figure 
 p1_grob <- ggplotGrob(p1)
@@ -452,15 +460,15 @@ all_years_summary_ameriflux <- all_years_summary_ameriflux%>%
 
 ######Visualize Rs data by severity by Year####
 ##Boxplot of replicate averages across disturbance severity per year 
-splot <- ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Severity)) +
+ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Severity)) +
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   theme_classic()+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",plot.margin = margin(1,1,1,1, "cm")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",axis.ticks.length=unit(.35, "cm"),prism.ticks.length = unit(0.25, "cm")) +
+  scale_y_continuous(breaks=pretty_breaks(n=7),sec.axis = sec_axis(~ .,labels = NULL, breaks=pretty_breaks(n=7))) +
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Severity", y=expression(paste("Rs (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+  labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
 ggsave("severity_boxplot.png",height = 10, width = 15 , units = "in")
 
 ###Boxplot of replicate averagers across disturbance severity post and Post(mean of 2019-2021)
@@ -468,7 +476,7 @@ ggplot(all_years_summary_ameriflux, aes(x = Severity, y = ave_efflux, fill = Sev
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   theme_classic()+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",plot.margin = margin(1,1,1,1, "cm")) +
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none") +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   facet_grid(~factor(pre_post,levels=c("Pre-Disturbance","Post-Disturbance")))+ 
   guides(col = guide_legend(nrow = 2)) +
@@ -483,14 +491,15 @@ all_years_summary_treatment <- all_years_gs%>%
 
 ####Create a boxplot of Rs by treatment by year 
 ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Treatment)) +
-  scale_fill_manual(values=c("darkgoldenrod4", "forestgreen"))+
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
   theme_classic()+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 15), axis.text.y= element_text(size=15), axis.title.x = element_text(size = 15), axis.title.y  = element_text(size=15), legend.title = element_blank(),  strip.text.x =element_text(size = 15), legend.text = element_blank(), legend.position = "none") +
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none", axis.ticks.length=unit(.35, "cm")) +
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Treatment", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
-
+  scale_y_continuous(breaks = c(4,5,6,7,8),sec.axis = sec_axis(~ .,labels = NULL,breaks = c(4,5,6,7,8))) +
+  labs(x = "Treatment", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
+ggsave("treatment_boxplot.png",height = 10, width = 15 , units = "in")
 
 
 #########Split plot Model for absolute data#####
@@ -645,21 +654,22 @@ gvlma::gvlma(pre_post_model)
 
 
 ###Plot Rs resistance by severity per year with regression line representing average slope post disturbance years 
-ggplot(resistance_rs, aes(x = Severity, y = ave_log_response)) +
+
+####Figure 5
+ggplot(resistance_rs, aes(x = Severity, y = ave_log_response, color = year)) +
   theme_classic()+
-  geom_point(aes(colour = year), size = 3)+
-  scale_color_manual(values=c("#000000", "#1B9E77", "#D95F02", "#7570B3")) +
-  geom_smooth(method = "lm", se = FALSE, aes(linetype = pre_post), color = "black", size = 0.5, show.legend = FALSE, alpha = 0.2)+
-  theme(axis.text= element_text(size = 20), axis.title = element_text(size = 25), legend.text = element_text(size = 15), legend.title = element_text(size = 15), legend.position = c(.2,.25)) +
+  geom_point(aes(colour = year), size = 10)+
+  scale_color_manual(values=c("#072F5F", "#1261A0", "#3895D3", "#56CCED")) +
+ geom_smooth(method = "lm", se = FALSE, data=subset(resistance_rs,pre_post=post), color = "darkgrey", size = 3, show.legend = FALSE, alpha = 0.5)+
+  theme(axis.text= element_text(size = 35), axis.title = element_text(size = 40), legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.1,.25)) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), width = 3)+
-  labs(y = "Rs Resistance") 
+  geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), size = 1, width = 3)+
+  geom_hline(yintercept = 0, linetype = "dashed", size = 2) +
+  labs(y=expression(paste(" ",R[s]," Resistance ")), x = "Severity (% Gross Defoliation)")
  
-ggsave("Output/log_response.png",height = 10, width = 10, units = "in")
+ggsave("log_response_figure5.png",height = 10, width = 15, units = "in")
 
-g <- ggarrange(splot, lr_plot, labels = c("A", "B"), font.label = list(size = 25))
-ggsave("Output/combined_fig_chris.png",height = 10, width = 15, units = "in",g)
 
 
 #####Heterotrophic Respiration Analysis 2019-2021#######
