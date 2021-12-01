@@ -19,6 +19,7 @@ library(scales)
 library(rcartocolor)
 library(gridExtra)
 library(gvlma)
+library(car)
 library(ggprism)##Checking linear regression assumptions
 
 
@@ -702,38 +703,38 @@ ggsave("log_response_figure5.png",height = 10, width = 15, units = "in")
 ##Clean Dataframe 
 #2019
 Rh_2019_sub <- Rh_2019%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured,oven.air.weight.ratio)%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured,oven.air.weight.ratio, dry_weight)%>%
   filter(!is.na(soilCO2Efflux))
 
 #2020
 Rh_2020_sub <- Rh_2020%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio)%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio,dry_weight)%>%
   filter(!is.na(soilCO2Efflux))
 
 #2021
 Rh_2021_sub <- Rh_2021%>%
-  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio)%>%
+  select(Rep_ID, Plot_ID, Subplot, soilCO2Efflux, soilTemp, date_measured, oven.air.weight.ratio,dry_weight)%>%
   filter(!is.na(soilCO2Efflux))
-Rh_2021 <- Rh_2021[-c(249),]
+
 
 #####Combine all years into one dataset 
 all_years_Rh <- rbind(Rh_2019_sub, Rh_2020_sub, Rh_2021_sub)
 
-##Convert date into POSIXct class and add just a year column 
+##Convert date into POSIXct class and add a year only column 
 all_years_Rh$date_measured <- as.POSIXct(all_years_Rh$date_measured,format="%Y-%m-%d")
 all_years_Rh$year <- format(all_years_Rh$date, format = "%Y")
 
 
-##Combine Rep_ID, Plot_ID and Subplot into one column to create "subplot_code" column 
+##Combine Rep_ID, Plot_ID and Subplot into one column to create "subplot_code" column. This will be used to add Severity and treatment values
 all_years_Rh$Subplot_code <- str_c(all_years_Rh$Rep_ID, '',all_years_Rh$Plot_ID,'', all_years_Rh$Subplot)
 
 
-##Add disturbance severity column to dataset
+##Add disturbance severity column to dataset.Function created previously 
 all_years_Rh <- all_years_Rh%>%
   mutate(Severity = sapply(Subplot_code, Plot_conversion))
 
 
-##Add treatment column to datasets
+##Add treatment column to datasets. Function created previously 
 all_years_Rh <- all_years_Rh %>%
   mutate(Treatment = sapply(Subplot_code, Sub_plot_conversion))
 
@@ -741,17 +742,21 @@ all_years_Rh$soilCO2Efflux <- as.numeric(all_years_Rh$soilCO2Efflux)
 all_years_Rh$Severity <- as.factor(all_years_Rh$Severity)
 
 
-###Convert Rh to umol/gram*sec. Adjusting the surface by 1.25 to account for mouth of mason jar. 
+###Convert Rh to umol/gram*sec. Adjusting the surface by 9cm/6cm to account for mouth of mason jar, adjusting 486cm^3/991cm^3 to adjust from soil chamber headspace volume to mason jar headspace volume and dividing by dry weight of each mason jar in grams. 
 
 all_years_Rh <- all_years_Rh%>%
-  mutate(soilCO2Efflux_umolg = soilCO2Efflux*1.25/100000)
+  mutate(soilCO2Efflux_umolg = soilCO2Efflux*(9/6)*(486)*(1/991)/dry_weight)
+
+
+###Create water content variable from oven to air dry weight ratio
+all_years_Rh <- all_years_Rh%>%
+  mutate(water_content_percent = (1-oven.air.weight.ratio)*100)
 
 all_years_Rh_summary <- all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
   group_by(Rep_ID, year, Severity, Treatment)%>%
-  summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
+  summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg),ave_water_content_percent = mean(water_content_percent), ave_soilTemp = mean(soilTemp))
   
-
 all_years_Rh_severity <- all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
   group_by(Rep_ID, year, Severity)%>%
@@ -763,43 +768,41 @@ ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fil
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   theme_classic()+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",plot.margin = margin(1,1,1,1, "cm")) +
+  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none") +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   guides(col = guide_legend(nrow = 2)) +
   facet_grid(.~year,scales="free")+ 
-  labs(x = "Disturbance Severity:Gross defoliation (%)", y=expression(paste("Soil Respiration (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
+  labs(x = "Disturbance Severity:Gross defoliation (%)", y=expression(paste("Heterotrophic Respiration (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
+
+ggsave("absolute_Rh.png",height = 10, width = 15, units = "in")
 
 ##Testing water content with Rh
-all_years_Rh <- all_years_Rh%>%
-  mutate(water_content_percent = (1-oven.air.weight.ratio)*100)
-
-VWC_Rh_model <- lm(soilCO2Efflux ~ water_content_percent, data = all_years_Rh)
+VWC_Rh_model <- lm(soilCO2Efflux_umolg ~ water_content_percent, data = all_years_Rh)
 summary(VWC_Rh_model)
 
-ggplot(all_years_Rh, aes(x = water_content_percent, y =soilCO2Efflux )) +
+ggplot(all_years_Rh, aes(x = water_content_percent, y =soilCO2Efflux_umolg )) +
   geom_smooth(method = "lm", se = FALSE) +
   geom_point() +
   theme_classic() 
 
+
 #Rh Model 
 ####Testing Assumptions 
-##Test for outliers test: no extreme outliers
+##Test for outliers test: one extreme outlier
 outliers <- all_years_Rh_summary %>% 
   group_by(Severity, Treatment) %>%
   identify_outliers(ave_soilCO2Efflux_umolg)
 
-all_years_Rh_no_outlier <- all_years_Rh[-c(34,35,49,50,69,70,77),]
+##Equality of variance test for severity and treatment 
+leveneTest(ave_soilCO2Efflux_umolg ~ Severity, data = all_years_Rh_summary)
 
-hist(all_years_Rh_no_outlier$soilCO2Efflux)
-
-##Equality of variance test for severity and treatment (Slightly unequal data using alpha = 0.05. Equal variance using alpha = 0.1)
-library(car)
-leveneTest(soilCO2Efflux ~ Severity, data = all_years_Rh_no_outlier)
-
-##Normality (Data are normal)
+##Normality
 # Build the linear model
-normality_test  <- lm(soilCO2Efflux ~ Severity*Treatment*year,
-                      data = all_years_Rh)
+normality_test  <- lm(ave_soilCO2Efflux_umolg_transformed ~ Severity*Treatment*year,
+                      data = all_years_Rh_summary_transformed)
+
+all_years_Rh_summary_transformed <- all_years_Rh_summary%>%
+  mutate(ave_soilCO2Efflux_umolg_transformed = log(ave_soilCO2Efflux_umolg))
 
 # Create a QQ plot of residuals
 ggqqplot(residuals(normality_test))
@@ -807,7 +810,7 @@ ggqqplot(residuals(normality_test))
 shapiro_test(residuals(normality_test))
 
 
-rh_model <- aov(ave_soilCO2Efflux_umolg  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary)
+rh_model <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
 summary(rh_model)
 
 
@@ -883,6 +886,8 @@ ggplot(resistance_rh, aes(x = Severity, y = ave_log_response, color = year)) +
   geom_hline(yintercept = 0, linetype = "dashed", size = 2) +
   labs(y=expression(paste(" ",R[h]," Resistance ")), x = "Severity (% Gross Defoliation)") +
   guides(color = guide_legend(title = "Year"))
+
+ggsave("log_response_Rh.png",height = 10, width = 15, units = "in")
 
 
 
