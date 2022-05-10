@@ -476,6 +476,7 @@ layout <- rbind(c(1,2),
                 c(5,6))
 g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_grob, layout_matrix=layout)
 ```
+**Figure 1**: Mean (± 1 S.E.) measurement period soil respiration (Rs; A, B), soil temperature (Ts; C, D), and volumetric water content (VWC; E, F) by disturbance severity (left panels) and treatment type (right panels), 2018-2021.  Red vertical dashed line delineates pre- and post-disturbance measurement periods.  
 
 
 ####Model assumption Testing for Rs split-split model 
@@ -660,6 +661,7 @@ ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Sever
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
 ```
+**Figure 2**: Boxplots displaying median, interquartile range (middle 50% of range) and minimum and maximum soil respiration (Rs) values by disturbance severity for pre-disturbance (2018, gray shading) and post-disturbance (2019-2021) years. Different letters indicate significant within-year differences among disturbance severities (alpha = 0.05, F = 4.42, p < 0.001). 
 
 ## Figure 3
 ```{r echo = FALSE, message=FALSE, fig.width=15, fig.height = 10}
@@ -678,6 +680,7 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
 ```
+**Figure 3**: Boxplots displaying median, interquartile range (middle 50% of range) and minimum and maximum soil respiration (Rs) values by top-down and bottom-up disturbance types for pre-disturbance (2018, gray shading) and post-disturbance (2019-2021) years. Within-year comparisons yielded no significant differences (alpha = 0.05, F = 0.946, p = 0.42). 
 
 ####Model assumption Testing for Rh split-split model 
 ```{r echo = FALSE, message = FALSE}
@@ -741,41 +744,52 @@ out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Ef
 ```
 
 ##Figure 4
-```{r echo = FALSE, message=FALSE}
+```{r echo = FALSE, message=FALSE, fig.height=8, fig.width=15}
 ##Create a treatment ONLY summary (Because Treatment main effect was significant, not interaction term)
 all_years_Rh_treatment_ONLY <-  all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
   group_by(Rep_ID,Treatment)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
-
-##Plot Rh treatment all years
-ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
-  theme_classic()+
-  scale_fill_manual(values=c("#A6611A", "#018571"))+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")")))
-```
-
-##Figure 5
-```{r echo = FALSE, message=FALSE}
 ##Create a severity ONLY summary (Because severity main effect was significant, not interaction term)
 all_years_Rh_severity_ONLY <-  all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
   group_by(Rep_ID,Severity)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
+
+
+##Plot Rh treatment all years
+Rh_T <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
+  geom_boxplot(width=0.5)+
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position = "right") +
+  guides(col = guide_legend(nrow = 2)) +
+  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
+  annotate("text", x = 0.6, y = 0.0063, label = "B", size = 9)
+
+
 ##Plot Rh Severity all years
-ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
+Rh_S <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
   theme_classic()+
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
+  labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
+  annotate("text", x = 0.6, y = 0.0076, label = "A", size = 9)
+
+#Rh Multipanel Figure 
+Rh_T_grob <- ggplotGrob(Rh_T)
+Rh_S_grob <- ggplotGrob(Rh_S)
+
+
+layout <- rbind(c(1,2))
+
+
+Rh <- grid.arrange(Rh_S_grob, Rh_T_grob, layout_matrix=layout)
 ```
 
 ```{r echo = FALSE, message = FALSE}
@@ -889,6 +903,7 @@ summary(post_hoc_regression_Rh)
 
 ```
 
+##Figure 5
 ```{r echo = FALSE, message= FALSE, fig.height=10, fig.width=20}
 ###Plot Rs and Rh resistance by severity per year with regression line representing average slope post disturbance years 
 ####Figure 5
@@ -932,4 +947,4 @@ layout <- rbind(c(1,2))
                
 resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
 ```
-
+**Figure 5**: A) Average Rs and B) Average Rh resistance (rt) as a function of disturbance severity (% gross defoliation), 2018-2021. Gray line indicates significant linear decline in Rs resistance with increasing disturbance severity between 2019-2021 (p-value: <0.001, Adjusted R2 = 0.93). No significant relationship between Rh and disturbance severity. 
