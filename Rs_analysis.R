@@ -518,6 +518,7 @@ ggsave("Figure_2.png",height = 10, width = 15 , units = "in")
 
 
 
+
 #####Summarize data by Treatment######
 ##Summarize treatment by replications per year 
 all_years_summary_treatment <- all_years_gs_nov%>%
@@ -760,12 +761,12 @@ shapiro_test(residuals(normality_test_log))
 
 #####Run Split-split model for transformed Rh Data
 ##Only Year is significant 
-rh_model <- aov(ave_soilCO2Efflux_umolg  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_NoOut)
+rh_model <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary)
 summary(rh_model)
 
 
 #Rh model with VWC as covariate 
-rh_model_VWC <- aov(ave_soilCO2Efflux_umolg  ~ Severity*Treatment*year +ave_water_content_percent + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
+rh_model_VWC <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year +ave_water_content_percent + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
 summary(rh_model_VWC)
 
 ##AIC Values for Rh Models 
@@ -792,31 +793,42 @@ all_years_Rh_severity_ONLY <-  all_years_Rh%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
 ##Plot Rh treatment all years
-ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
+Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
   theme_classic()+
   scale_fill_manual(values=c("#A6611A", "#018571"))+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  geom_boxplot(width = 0.5)+
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position="right") +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")")))
+  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 9)
 
-ggsave("Rh_Treatment.png",height = 10, width = 10, units = "in")
+  
 
 ##Plot Rh Severity all years
-ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
+Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
   theme_classic()+
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
-ggsave("Rh_Severity.png",height = 10, width = 10, units = "in")
+  labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
+  annotate("text", x = 0.6, y = 0.0076, label = "A", size = 9)
 
 
+#Rh  Multipanel Figure 
+Rh_1_grob <- ggplotGrob(Rh1)
+Rh_2_grob <- ggplotGrob(Rh2)
+
+
+layout <- rbind(c(1,2))
+
+
+Rh <- grid.arrange(Rh_2_grob,Rh_1_grob, layout_matrix=layout)
+
+ggsave("Figure_4_Rh.png",height = 10, width = 20, units = "in", Rh)
 #Post Hoc
-out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg,Severity,8,0.000000462, console = TRUE))
+out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Severity,8,0.000000462, console = TRUE))
 
 out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Treatment,11,0.0329, console = TRUE))
 
