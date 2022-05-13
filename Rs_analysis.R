@@ -358,7 +358,6 @@ p1 <- ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, 
 geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5,color = "red3")+
   labs(x = "Date", y=expression(paste(" ",R[s]," (",mu*molCO[2]," ",m^-2," ",sec^-1,")"))) 
 
-ggsave("Figure_1(UMBS).png", height = 10, width = 20, units = "in")
 ##Rs Treatment 
 p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux, group = Treatment, color =Treatment)) +
   theme_classic() +
@@ -458,7 +457,7 @@ layout <- rbind(c(1,2),
                 c(5,6))
 g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_grob, layout_matrix=layout)
 
-ggsave("Figure_1.png", height = 20, width = 30, units = "in", g_timeseries)
+ggsave(path = "Manuscript_figures", filename = "Figure_1.png", height = 20, width = 30, units = "in", g_timeseries)
 
 
 
@@ -498,7 +497,7 @@ ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Sever
   geom_rect(data=data.frame(year='2018'), inherit.aes=FALSE,
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
-ggsave("Figure_2.png",height = 10, width = 15 , units = "in")
+ggsave(path ="Manuscript_figures", filename = "Figure_2.png",height = 10, width = 15 , units = "in")
 
 
 ########Create dataframe and boxplot of only control Rs by year to show the control Rs has been increasing####
@@ -539,7 +538,7 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
   geom_rect(data=data.frame(year='2018'), inherit.aes=FALSE,
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
-ggsave("Figure_3.png",height = 10, width = 15 , units = "in")
+ggsave(path = "Manuscript_figures", filename = "Figure_3.png",height = 10, width = 15 , units = "in")
 
 
 #########Split plot Model for absolute data#####
@@ -706,7 +705,6 @@ ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fil
   facet_grid(.~year,scales="free")+ 
   labs(x = "Severity (% Gross defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
 
-ggsave("Figure_4.png",height = 10, width = 15, units = "in")
 
 ##Plot Boxplot of absolute Rh value 
 ggplot(all_years_Rh_treatment, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
@@ -731,7 +729,7 @@ ggplot(all_years_Rh, aes(x = water_content_percent, y =soilCO2Efflux_umolg )) +
 #Rh Model 
 ####Testing Assumptions 
 ##Test for outliers test: one extreme outlier
-outliers <- all_years_Rh_summary %>% 
+ all_years_Rh_summary %>% 
   group_by(Severity, Treatment) %>%
   identify_outliers(ave_soilCO2Efflux_umolg)
 
@@ -761,7 +759,7 @@ shapiro_test(residuals(normality_test_log))
 
 #####Run Split-split model for transformed Rh Data
 ##Only Year is significant 
-rh_model <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary)
+rh_model <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
 summary(rh_model)
 
 
@@ -797,10 +795,10 @@ Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Eff
   theme_classic()+
   scale_fill_manual(values=c("#A6611A", "#018571"))+
   geom_boxplot(width = 0.5)+
-  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position="right") +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 9)
+  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 11)
 
   
 
@@ -809,11 +807,11 @@ Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflu
   theme_classic()+
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 25), axis.text.y= element_text(size=25), axis.title.x = element_text(size = 30), axis.title.y  = element_text(size=30), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   guides(col = guide_legend(nrow = 2)) +
   labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
-  annotate("text", x = 0.6, y = 0.0076, label = "A", size = 9)
+  annotate("text", x = 0.6, y = 0.0076, label = "A", size = 11)
 
 
 #Rh  Multipanel Figure 
@@ -826,9 +824,10 @@ layout <- rbind(c(1,2))
 
 Rh <- grid.arrange(Rh_2_grob,Rh_1_grob, layout_matrix=layout)
 
-ggsave("Figure_4_Rh.png",height = 10, width = 20, units = "in", Rh)
+ggsave(path = "Manuscript_figures",filename = "Figure_4.png",height = 10, width = 20, units = "in", Rh)
+
 #Post Hoc
-out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Severity,8,0.000000462, console = TRUE))
+out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Severity,8,0.0391, console = TRUE))
 
 out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Treatment,11,0.0329, console = TRUE))
 
@@ -988,157 +987,150 @@ layout <- rbind(c(1,2))
 resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
 ggsave("Figure_5.png",height = 10, width = 20, units = "in", resistance)
 
-#######Cross-year soil micrometerology comparison: Compare soil temperature, moisture and Rs in the control across years######
+####Q10 Calculations####
 
-##Filter out disturbed plots (Only Control)
-all_years_enviro <- all_years%>%
-  filter(Severity == "0")
+##Creating a dataframe with average Rs across Rep, severity, treatment and round of measurement (date)
+all_years_Q10 <- all_years_gs_nov%>%
+  filter(!is.na(soilTemp))%>%
+  filter(year!=2018)%>%
+  group_by(Rep_ID, Severity, Treatment, date,year)%>%
+  summarize(ave_soilCO2Efflux = mean(soilCO2Efflux), ave_soilTemp = mean(soilTemp))
 
-##Filter out in NA values and summarize Rs, moisture, temperature by subplot 
-all_years_enviro_2 <- all_years_enviro%>%
-  filter(!is.na(Temp_C_7cm))%>%
-  filter(!is.na(VWC_20cm))%>%
-  group_by(Subplot_code, Year)%>%
-  summarize(ave_VWC = mean(VWC_20cm), ave_temp = mean(Temp_C_7cm), ave_efflux = mean(Efflux_umol_m2_s), std_error_VWC = std.error(VWC_20cm), std_error_temp = std.error(Temp_C_7cm), std_error_efflux = std.error(Efflux_umol_m2_s))
+#Scatterplots 
+##All datapoints by day of measurement 
+ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux)) +
+  geom_point()
 
-##Make Year a factor for analysis 
-all_years_enviro_2$Year <- as.factor(all_years_enviro_2$Year)
-
-##?????
-my_comparisons <- list(c("2018", "2019"), c("2018", "2020"))
-
-##Run a MANOVA for differences across the control efflux, moisture and temperature 
-##Clean dataset 
-enviro_test <- all_years_enviro%>%
-  ungroup()%>%
-  select(Year, Efflux_umol_m2_s, VWC_20cm, Temp_C_7cm)
-factor <- cbind(enviro_test$Efflux_umol_m2_s, enviro_test$Temp_C_7cm, enviro_test$VWC_20cm)
-
-##Check for outliers within year (none) for Efflux, moisture and temperature
-efflux_outliers <- enviro_test %>% 
-  group_by(Year) %>%
-  identify_outliers(Efflux_umol_m2_s)
+##All Data points by day of measurement faceted by severity
+ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux, group = Severity)) +
+  geom_point()+
+  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
+    geom_smooth(method = "nls",
+                method.args = list(formula = y ~ a*exp(b*x),
+                                   start = list(a = 0.8, b = 0.1)),
+                data = all_years_Q10,
+                se = FALSE,
+                aes(color = factor(Severity))) +
+  facet_wrap(~Severity +Rep_ID)
 
 
-enviro_test %>% 
-  group_by(Year) %>%
-  identify_outliers(VWC_20cm)
 
-enviro_test %>% 
-  group_by(Year) %>%
-  identify_outliers(Temp_C_7cm)
-
-##Check for normality within year (normal) for efflux temp and moisture
-#Efflux normal
-enviro_test %>%
-  group_by(Year) %>%
-  shapiro_test(Efflux_umol_m2_s)
-
-ggqqplot(enviro_test, "Efflux_umol_m2_s", facet.by = "Year")
-
-##moisture (slightly non normal for 2018)
-enviro_test %>%
-  group_by(Year) %>%
-  shapiro_test(Moisture)
-
-ggqqplot(enviro_test, "Moisture", facet.by = "Year")
-
-##Temp normal
-enviro_test %>%
-  group_by(Year) %>%
-  shapiro_test(Temp)
-
-ggqqplot(enviro_test, "Temp", facet.by = "Year")
+##All Data points by day of measurement faceted by severity
+ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux)) +
+  geom_point()+
+  facet_wrap(~Treatment)
 
 
-##Check for equal variance (equal) for all three 
-##Efflux (equal)
-enviro_test %>% 
-  levene_test(Efflux ~ Year)
+###Severity and Replicate Exponential model 
+##Exponential Model 
+model_Q10 <- all_years_Q10%>%
+  group_by(Rep_ID, Severity,Treatment)%>%
+  do(model = nls(ave_soilCO2Efflux ~ a * exp(b * ave_soilTemp), start = list(a = 0.8,b = 0.1),data = .))%>%
+ungroup()
 
-##moisture (equal)
-enviro_test %>% 
-  levene_test(Moisture ~ Year)
+##Extracting parameters 
+param_model_Q10 <-  model_Q10 %>%
+  mutate(param_efflux = lapply(model, broom::tidy)) %>%
+  unnest(param_efflux) %>%
+  select(Rep_ID, Severity,Treatment, term, estimate, std.error) %>%
+  pivot_wider(names_from = term, values_from = estimate) 
 
-##Temperature (equal)
-enviro_test %>% 
-  levene_test(Temp ~ Year)
+##Q10 value dataframe
+param_model_Q10_b <- param_model_Q10%>%
+  select(Rep_ID, Severity,Treatment, std.error, b)%>%
+  filter(!is.na(b))%>%
+  mutate(Q10 = exp(10*b))
 
-##Run MANOVA 
-enviro_model <- manova(factor ~ Year, data=enviro_test)  
-summary(enviro_model, intercept=TRUE)
-summary.aov(enviro_model)
+##Intercept value dataframe
+param_model_Q10_a<- param_model_Q10%>%
+  select(Rep_ID, Severity,Treatment, std.error, a)%>%
+  filter(!is.na(a))%>%
+  rename(intercept = a)
 
-##data are normal across groups too 
-shapiro_test(residuals(enviro_model))
-ggqqplot(residuals(enviro_model))
-
-##Post hoc 
-enviro_test$Year <- as.factor(enviro_test$Year)
-## Efflux (2018 is significantly different from 2019 and 2020)
-pwc <- enviro_test %>% 
-  tukey_hsd(Efflux ~ Year)
-pwc
-
-##Moisture (2018 is significantly different from 2019 and 2020)
-pwc2 <- enviro_test %>% 
-  tukey_hsd(Moisture ~ Year)
-pwc2
-
-##Temperature not significant 
-pwc3 <- enviro_test %>% 
-  tukey_hsd(Temp ~ Year)
-pwc3
-
-p1 <- ggplot(enviro_test, aes(x = Year, y = Efflux)) +
-  geom_boxplot(fill = "khaki3") +
+##Boxplots of Q10 Values and intercept values 
+##Severity Q10
+ggplot(param_model_Q10_b, aes(x = Severity, y = Q10, fill = Severity)) +
   theme_classic()+
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01), limits = c(3.6, 11.5))+
-  theme(axis.text.y = element_text(size = 10), axis.title.y = element_text(size = 15), axis.title.x = element_blank(), axis.text.x = element_blank()) +
-  stat_compare_means(comparisons = my_comparisons, label = "p.signif", label.y = c(9.7, 10.7), size = 8) + ylab("soil respiration")
-
-p2 <- ggplot(enviro_test, aes(x = Year, y = Moisture)) +
-  geom_boxplot(fill = "lightsteelblue2") +
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  geom_boxplot()
+##Severity Intercept
+ggplot(param_model_Q10_a, aes(x = Severity, y = intercept, fill = Severity)) +
   theme_classic()+
-  theme(axis.text.y = element_text(size = 10), axis.title.y = element_text(size = 15), axis.title.x = element_blank(), axis.text.x = element_blank()) +
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01), limits = c(3.5, 13))+
-  stat_compare_means(comparisons = my_comparisons, label = "p.signif", label.y = c(11.7, 12.5), size = 8) +
-  ylab("volumetric soil moisture (20cm)") 
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  geom_boxplot()
 
-p3 <- ggplot(enviro_test, aes(x = Year, y = Temp))+
-  geom_boxplot(fill = "palegreen") +
+##Treatment 10
+##Boxplots of Q10 Values and intercept values 
+ggplot(param_model_Q10_b, aes(x = Treatment, y = Q10, fill = Treatment)) +
   theme_classic()+
-  scale_y_continuous(breaks = c(17.5,18.5, 19.5, 20.5), labels = scales::number_format(accuracy = 0.1), limits = c(17.2, 20.5)) +
-  theme(axis.text = element_text(size = 10), axis.title = element_text(size = 15)) +
-  annotate("text", x = 0.7, y = 20.4, label = "n.s.", size = 6) +
-  ylab("Soil temperature (C)") 
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
+  geom_boxplot()
+
+##Treatment Intercept
+ggplot(param_model_Q10_a, aes(x = Treatment, y = intercept, fill = Treatment)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
+  geom_boxplot()
 
 
-library(gridExtra)
-timeseries <- grid.arrange(p1, p2, p3, ncol=1)
-g <- arrangeGrob(p1, p2, p3,ncol=1)
-plot(timeseries)
+###Build split-plot statistical model for Q10 and Intercept values 
 
-ggsave("Output/control_temp_moist_efflux.png",height = 15, width = 7, units = "in", g)
+##Q10 model 
+
+####Testing Assumptions 
+##Test for outliers test: No extreme outliers
+param_model_Q10_b %>% 
+  group_by(Severity, Treatment) %>%
+  identify_outliers(Q10)
 
 
-###Rs and Rh relationship 
+##Equality of variance test for severity and treatment: Equal
+leveneTest(Q10 ~ Severity*Treatment, data = param_model_Q10_b)
 
-all_years_summary_post <- all_years_summary%>%
-  filter(year != 2018)%>%
-  select(Rep_ID, Severity, Treatment, year, soilCO2Efflux)
+##Normality
+# Build the linear model: Normal 
+normality_test_Q10  <- lm(Q10 ~ Severity*Treatment,
+                      data = param_model_Q10_b)
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test_Q10))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test_Q10))
 
-all_years_Rh_summary_post <- all_years_Rh_summary_transformed%>%
-  select(Rep_ID, Severity, Treatment, year, ave_soilCO2Efflux_umolg)
 
-Rs_Rh <- merge(all_years_summary_post, all_years_Rh_summary_post, by = c("Rep_ID", "Severity", "Treatment", "year"))
+#####Run Split-plot model for Q10 
  
+Q10_model <- aov(Q10  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_b)
+summary(Q10_model)
 
-Rs_rh_model <- lm(ave_soilCO2Efflux_umolg~soilCO2Efflux, data = Rs_Rh)
-summary(Rs_rh_model)
 
-ggplot(Rs_Rh, aes(x = soilCO2Efflux, y =ave_soilCO2Efflux_umolg,color = Severity)) +
-  geom_smooth(method = "lm", se = FALSE ) +
-  geom_point() +
-  theme_classic() 
-  
+##Intercept model 
+
+####Testing Assumptions 
+##Test for outliers test: No extreme outliers
+param_model_Q10_a %>% 
+  group_by(Severity, Treatment) %>%
+  identify_outliers(intercept)
+
+
+##Equality of variance test for severity and treatment: Equal
+leveneTest(intercept ~ Severity*Treatment, data = param_model_Q10_a)
+
+##Normality
+# Build the linear model: Normal 
+normality_test_intercept  <- lm(intercept ~ Severity*Treatment,
+                          data = param_model_Q10_a)
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test_intercept))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test_intercept))
+
+
+#####Run Split-plot model for Intercept 
+
+intercept_model <- aov(intercept  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_a)
+summary(intercept_model)
+
+out_severity_intercept <- with(param_model_Q10_a, LSD.test(intercept,Severity,9,0.1097, console = TRUE))
+
+
+   
