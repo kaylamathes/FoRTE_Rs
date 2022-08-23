@@ -49,6 +49,7 @@ all_2018 <- read.csv("googledrive_data/Rs_2018.csv", na.strings = c("NA", "na"))
 all_2019 <- read.csv("googledrive_data/Rs_2019.csv", na.strings = c("NA","na"))
 all_2020 <- read.csv("googledrive_data/Rs_2020.csv", na.strings = c("NA","na"))
 all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
+all_2022 <- read.csv("googledrive_data/Rs_2022.csv", na.strings = c("NA","na"))
 Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
 Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na", "#VALUE!"))
 Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na", "#VALUE!"))
@@ -85,9 +86,19 @@ all_2021_sub <- all_2021%>%
   select(!notes)%>%
   filter(!is.na(soilCO2Efflux))
 
+#2022: 
+
+all_2022_sub <- all_2022%>%
+  select(!notes)%>%
+  filter(!is.na(soilCO2Efflux))%>%
+  rename(nestedSubplot = nestSubplot)
+
+
+  
+
 
 #####Combine all years into one dataset 
-all_years <- rbind(all_2021_sub,all_2020_sub, all_2019_sub, all_2018_sub)
+all_years <- rbind(all_2021_sub,all_2020_sub, all_2019_sub, all_2018_sub, all_2022_sub)
 
 ##Convert date into POSIXct class and add just a year column 
 all_years$date <- as.POSIXct(all_years$date,format="%Y-%m-%d")
@@ -270,6 +281,10 @@ all_years_grouped <- all_years%>%
 
 ##Convert "week group" to as.Date class 
 all_years_grouped$week_group <- as.Date(all_years_grouped$week_group)
+
+
+
+
 
 ######Create Full Rs, moisture and temperature timeseries####
 
@@ -464,7 +479,7 @@ ggsave(path = "Manuscript_figures", filename = "Figure_1.png", height = 20, widt
 #######Summarize per year######
 ##Inlude only months that were analyzed across all years (ie.Not May and June in 2019)
 all_years_gs_nov <- all_years%>%
-  filter(date == "2018-11-15" |date == "2018-11-16"|date == "2018-11-17"|  date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2019-11-11" |date == "2019-11-12" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2020-11-16" |date == "2020-11-17"|date == "2020-11-18"| date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06" | date == "2021-11-12" |date == "2021-11-13"|date == "2021-11-15") 
+  filter(date == "2018-11-15" |date == "2018-11-16"|date == "2018-11-17"|  date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2019-11-11" |date == "2019-11-12" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2020-11-16" |date == "2020-11-17"|date == "2020-11-18"| date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06" | date == "2021-11-12" |date == "2021-11-13"|date == "2021-11-15" | date == "2022-06-28" | date == "2022-07-03"| date == "2022-06-27" | date == "2022-07-18" | date == "2022-07-19")
 
 
 ###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
@@ -784,6 +799,11 @@ all_years_Rh_treatment_ONLY <-  all_years_Rh%>%
   group_by(Rep_ID,Treatment)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
+Rh_treatment_averages <- all_years_Rh_treatment_ONLY%>%
+  group_by(Treatment)%>%
+  summarize(ave_Rh = mean(ave_soilCO2Efflux_umolg))
+
+
 ##Create a severity ONLY summary (Because severity main effect was significant, not interaction term)
 all_years_Rh_severity_ONLY <-  all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
@@ -831,7 +851,210 @@ out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Ef
 
 out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Treatment,11,0.0329, console = TRUE))
 
-lsmeans(rh_model_VWC, "Treatment")
+
+####Q10 Calculations####
+
+##Creating a dataframe with average Rs across Rep, severity, treatment and round of measurement (date)
+all_years_Q10 <- all_years_gs_nov%>%
+  filter(!is.na(soilTemp))%>%
+  filter(year!=2018)%>%
+  group_by(Rep_ID, Severity, Treatment, date,year)%>%
+  summarize(ave_soilCO2Efflux = mean(soilCO2Efflux), ave_soilTemp = mean(soilTemp))
+
+#Scatterplots 
+##All datapoints by day of measurement 
+ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux)) +
+  geom_point()
+
+##All Data points by day of measurement faceted by severity
+Q10_1 <- ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux, group = Severity)) +
+  geom_point(aes(color = Severity), size = 3)+
+  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
+  geom_smooth(method = "nls",
+              method.args = list(formula = y ~ a*exp(b*x),
+                                 start = list(a = 0.8, b = 0.1)),
+              data = all_years_Q10,
+              se = FALSE,
+              aes(color = Severity)) +
+  theme(axis.text.x = element_text(size = 30), axis.text.y= element_text(size=35), axis.title.x = element_text(size = 30),   axis.title.y  = element_text(size=35), legend.title = element_text(size = 25),  strip.text.x =element_text(size = 25), legend.text = element_text(size = 20), panel.background = element_rect(fill = NA, color = "black"),legend.position = c(0.13, 0.67)) +
+  labs(x = expression("Soil Temperature ("*~degree*C*")"),y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+annotate("text", x = 0.6, y = 14.5, label = "A", size = 12)
+
+##All Data points by day of measurement faceted by treatment
+Q10_2 <- ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux, group = Treatment)) +
+  geom_point(aes(color = Treatment), size = 3)+
+  scale_color_manual(values=c("#A6611A", "#018571")) +
+  geom_smooth(method = "nls",
+              method.args = list(formula = y ~ a*exp(b*x),
+                                 start = list(a = 0.8, b = 0.1)),
+              data = all_years_Q10,
+              se = FALSE,
+              aes(color = Treatment)) +
+  theme(axis.text.x = element_text(size = 30), axis.text.y= element_text(size=35), axis.title.x = element_text(size = 30),   axis.title.y  = element_text(size=35), legend.title = element_text(size = 25),  strip.text.x =element_text(size = 25), legend.text = element_text(size = 20), panel.background = element_rect(fill = NA, color = "black"),legend.position = c(0.13, 0.67)) +
+  labs(x = expression("Soil Temperature ("*~degree*C*")"), y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL), position = "right")+
+  annotate("text", x = 0.6, y = 14.5, label = "B", size = 12)
+
+
+
+###Severity, treatment, Replicate Exponential model 
+##Exponential Model 
+model_Q10 <- all_years_Q10%>%
+  group_by(Rep_ID, Severity,Treatment)%>%
+  do(model = nls(ave_soilCO2Efflux ~ a * exp(b * ave_soilTemp), start = list(a = 0.8,b = 0.1),data = .))%>%
+  ungroup()
+
+##Extracting parameters 
+param_model_Q10 <-  model_Q10 %>%
+  mutate(param_efflux = lapply(model, broom::tidy)) %>%
+  unnest(param_efflux) %>%
+  select(Rep_ID, Severity,Treatment, term, estimate, std.error) %>%
+  pivot_wider(names_from = term, values_from = estimate) 
+
+##Q10 value dataframe
+param_model_Q10_b <- param_model_Q10%>%
+  select(Rep_ID, Severity,Treatment,  b)%>%
+  filter(!is.na(b))%>%
+  mutate(Q10 = exp(10*b))
+
+##Intercept value dataframe
+param_model_Q10_a<- param_model_Q10%>%
+  select(Rep_ID, Severity,Treatment, a)%>%
+  filter(!is.na(a))%>%
+  rename(intercept = a)
+
+
+
+
+param_model_Q10_10 <-  merge(param_model_Q10_a,param_model_Q10_b,by= c("Rep_ID", "Severity", "Treatment"))%>%
+mutate(BR = (ave_soilCO2Efflux = intercept * exp(b * 10)))
+
+##Boxplots of Q10 Values and intercept values 
+##Severity Q10
+Q10_3 <- ggplot(param_model_Q10_b, aes(x = Severity, y = Q10, fill = Severity)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  geom_boxplot()+
+  theme(axis.text.x= element_blank(), axis.text.y= element_text(size=30), axis.title.x = element_blank(), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL))+
+  labs(x = "Severity (% Gross Defoliation)", y = "Q10")+
+  annotate("text", x = 0.6, y = 3, label = "C", size = 12) +
+  annotate("text", x = 4.2, y = 3, label = "ns", size = 10)
+
+##Severity Intercept
+Q10_5 <- ggplot(param_model_Q10_10, aes(x = Severity, y = BR, fill = Severity)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
+  geom_boxplot()+
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL))+
+  labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",BR," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+  annotate("text", x = 0.6, y = 5, label = "D", size = 12) +
+  annotate("text", x = 1.2, y = 4.8, label = "a", size = 11) +
+  annotate("text", x = 2, y = 4.2, label = "ab", size = 11) +
+  annotate("text", x = 3, y = 3.8, label = "b", size = 11) +
+  annotate("text", x = 4, y = 3.2, label = "b", size = 11)
+  
+
+##Treatment Q10
+##Boxplots of Q10 Values and intercept values 
+Q10_4 <- ggplot(param_model_Q10_b, aes(x = Treatment, y = Q10, fill = Treatment)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
+  geom_boxplot(width = 0.5)+
+  theme(axis.text.x= element_blank(), axis.text.y= element_text(size=30), axis.title.x = element_blank(), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position = "right")+
+  labs(x = "Treatment", y = "Q10")+
+  annotate("text", x = 0.5, y = 3, label = "E", size = 12) +
+  annotate("text", x = 2.4, y = 3, label = "ns", size = 11)
+
+##Treatment BR
+Q10_6 <- ggplot(param_model_Q10_10, aes(x = Treatment, y = BR, fill = Treatment)) +
+  theme_classic()+
+  scale_fill_manual(values=c("#A6611A", "#018571"))+
+  geom_boxplot(width = 0.5)+
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL), position = "right")+
+  labs(x = "Treatment",  y=expression(paste(" ",BR," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+  annotate("text", x = 0.5, y = 4.8, label = "F", size = 12)+
+  annotate("text", x = 2.4, y =4.8, label = "ns", size = 11)
+
+##Q10 and Intercept Multipanel Figure
+Q10_1_grob <- ggplotGrob(Q10_1)
+Q10_2_grob <- ggplotGrob(Q10_2)
+Q10_3_grob <- ggplotGrob(Q10_3)
+Q10_4_grob <- ggplotGrob(Q10_4)
+Q10_5_grob <- ggplotGrob(Q10_5)
+Q10_6_grob <- ggplotGrob(Q10_6)
+
+
+layout_Q10 <- rbind(c(1,2),
+                    c(3,4),
+                    c(5,6))
+g_Q10 <- grid.arrange(Q10_1_grob, Q10_2_grob, Q10_3_grob, Q10_4_grob,Q10_5_grob,Q10_6_grob,layout_matrix=layout_Q10)
+
+ggsave(path = "Manuscript_figures", filename = "Q10_summary.png", height = 25, width = 25, units = "in",g_Q10 )
+
+
+###Build split-plot statistical model for Q10 and Intercept values 
+
+##Q10 model 
+
+####Testing Assumptions 
+##Test for outliers test: No extreme outliers
+param_model_Q10_b %>% 
+  group_by(Severity, Treatment) %>%
+  identify_outliers(Q10)
+
+
+##Equality of variance test for severity and treatment: Equal
+leveneTest(Q10 ~ Severity*Treatment, data = param_model_Q10_b)
+
+##Normality
+# Build the linear model: Normal 
+normality_test_Q10  <- lm(Q10 ~ Severity*Treatment,
+                          data = param_model_Q10_b)
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test_Q10))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test_Q10))
+
+
+#####Run Split-plot model for Q10 
+
+Q10_model <- aov(Q10  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_b)
+summary(Q10_model)
+
+out_severity_Q10 <- with(param_model_Q10_b, LSD.test(Q10,Severity,9,0.05465, console = TRUE))
+
+##Intercept model 
+
+####Testing Assumptions 
+##Test for outliers test: No extreme outliers
+param_model_Q10_10 %>% 
+  group_by(Severity, Treatment) %>%
+  identify_outliers(BR)
+
+
+##Equality of variance test for severity and treatment: Equal
+leveneTest(intercept ~ Severity*Treatment, data = param_model_Q10_10)
+
+##Normality
+# Build the linear model: Normal 
+normality_test_intercept  <- lm(intercept ~ Severity*Treatment,
+                                data = param_model_Q10_10)
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test_intercept))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test_intercept))
+
+
+#####Run Split-plot model for Intercept 
+
+intercept_model <- aov(BR  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_10)
+summary(intercept_model)
+
+out_severity_intercept <- with(param_model_Q10_10, LSD.test(BR,Severity,9,0.4937, console = TRUE))
 
 
 
@@ -987,150 +1210,6 @@ layout <- rbind(c(1,2))
 resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
 ggsave("Figure_5.png",height = 10, width = 20, units = "in", resistance)
 
-####Q10 Calculations####
-
-##Creating a dataframe with average Rs across Rep, severity, treatment and round of measurement (date)
-all_years_Q10 <- all_years_gs_nov%>%
-  filter(!is.na(soilTemp))%>%
-  filter(year!=2018)%>%
-  group_by(Rep_ID, Severity, Treatment, date,year)%>%
-  summarize(ave_soilCO2Efflux = mean(soilCO2Efflux), ave_soilTemp = mean(soilTemp))
-
-#Scatterplots 
-##All datapoints by day of measurement 
-ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux)) +
-  geom_point()
-
-##All Data points by day of measurement faceted by severity
-ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux, group = Severity)) +
-  geom_point()+
-  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-    geom_smooth(method = "nls",
-                method.args = list(formula = y ~ a*exp(b*x),
-                                   start = list(a = 0.8, b = 0.1)),
-                data = all_years_Q10,
-                se = FALSE,
-                aes(color = factor(Severity))) +
-  facet_wrap(~Severity +Rep_ID)
-
-
-
-##All Data points by day of measurement faceted by severity
-ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux)) +
-  geom_point()+
-  facet_wrap(~Treatment)
-
-
-###Severity and Replicate Exponential model 
-##Exponential Model 
-model_Q10 <- all_years_Q10%>%
-  group_by(Rep_ID, Severity,Treatment)%>%
-  do(model = nls(ave_soilCO2Efflux ~ a * exp(b * ave_soilTemp), start = list(a = 0.8,b = 0.1),data = .))%>%
-ungroup()
-
-##Extracting parameters 
-param_model_Q10 <-  model_Q10 %>%
-  mutate(param_efflux = lapply(model, broom::tidy)) %>%
-  unnest(param_efflux) %>%
-  select(Rep_ID, Severity,Treatment, term, estimate, std.error) %>%
-  pivot_wider(names_from = term, values_from = estimate) 
-
-##Q10 value dataframe
-param_model_Q10_b <- param_model_Q10%>%
-  select(Rep_ID, Severity,Treatment, std.error, b)%>%
-  filter(!is.na(b))%>%
-  mutate(Q10 = exp(10*b))
-
-##Intercept value dataframe
-param_model_Q10_a<- param_model_Q10%>%
-  select(Rep_ID, Severity,Treatment, std.error, a)%>%
-  filter(!is.na(a))%>%
-  rename(intercept = a)
-
-##Boxplots of Q10 Values and intercept values 
-##Severity Q10
-ggplot(param_model_Q10_b, aes(x = Severity, y = Q10, fill = Severity)) +
-  theme_classic()+
-  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
-  geom_boxplot()
-##Severity Intercept
-ggplot(param_model_Q10_a, aes(x = Severity, y = intercept, fill = Severity)) +
-  theme_classic()+
-  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
-  geom_boxplot()
-
-##Treatment 10
-##Boxplots of Q10 Values and intercept values 
-ggplot(param_model_Q10_b, aes(x = Treatment, y = Q10, fill = Treatment)) +
-  theme_classic()+
-  scale_fill_manual(values=c("#A6611A", "#018571"))+
-  geom_boxplot()
-
-##Treatment Intercept
-ggplot(param_model_Q10_a, aes(x = Treatment, y = intercept, fill = Treatment)) +
-  theme_classic()+
-  scale_fill_manual(values=c("#A6611A", "#018571"))+
-  geom_boxplot()
-
-
-###Build split-plot statistical model for Q10 and Intercept values 
-
-##Q10 model 
-
-####Testing Assumptions 
-##Test for outliers test: No extreme outliers
-param_model_Q10_b %>% 
-  group_by(Severity, Treatment) %>%
-  identify_outliers(Q10)
-
-
-##Equality of variance test for severity and treatment: Equal
-leveneTest(Q10 ~ Severity*Treatment, data = param_model_Q10_b)
-
-##Normality
-# Build the linear model: Normal 
-normality_test_Q10  <- lm(Q10 ~ Severity*Treatment,
-                      data = param_model_Q10_b)
-# Create a QQ plot of residuals
-ggqqplot(residuals(normality_test_Q10))
-# Shapiro test of normality 
-shapiro_test(residuals(normality_test_Q10))
-
-
-#####Run Split-plot model for Q10 
- 
-Q10_model <- aov(Q10  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_b)
-summary(Q10_model)
-
-
-##Intercept model 
-
-####Testing Assumptions 
-##Test for outliers test: No extreme outliers
-param_model_Q10_a %>% 
-  group_by(Severity, Treatment) %>%
-  identify_outliers(intercept)
-
-
-##Equality of variance test for severity and treatment: Equal
-leveneTest(intercept ~ Severity*Treatment, data = param_model_Q10_a)
-
-##Normality
-# Build the linear model: Normal 
-normality_test_intercept  <- lm(intercept ~ Severity*Treatment,
-                          data = param_model_Q10_a)
-# Create a QQ plot of residuals
-ggqqplot(residuals(normality_test_intercept))
-# Shapiro test of normality 
-shapiro_test(residuals(normality_test_intercept))
-
-
-#####Run Split-plot model for Intercept 
-
-intercept_model <- aov(intercept  ~ Severity*Treatment + Error(Rep_ID/Severity/Treatment), data = param_model_Q10_a)
-summary(intercept_model)
-
-out_severity_intercept <- with(param_model_Q10_a, LSD.test(intercept,Severity,9,0.1097, console = TRUE))
 
 
    
