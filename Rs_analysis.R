@@ -53,6 +53,7 @@ all_2022 <- read.csv("googledrive_data/Rs_2022.csv", na.strings = c("NA","na"))
 Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
 Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na", "#VALUE!"))
 Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na", "#VALUE!"))
+Rh_degass <- read.csv("googledrive_data/Hr_degass_trial.csv", na.strings = c("NA", "na"))
 
 
 ####Clean Dataframes#####
@@ -98,7 +99,7 @@ all_2022_sub <- all_2022%>%
 
 
 #####Combine all years into one dataset 
-all_years <- rbind(all_2021_sub,all_2020_sub, all_2019_sub, all_2018_sub, all_2022_sub)
+all_years <- rbind(all_2021_sub,all_2020_sub, all_2019_sub, all_2018_sub)
 
 ##Convert date into POSIXct class and add just a year column 
 all_years$date <- as.POSIXct(all_years$date,format="%Y-%m-%d")
@@ -376,7 +377,7 @@ geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5,color
 ##Rs Treatment 
 p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux, group = Treatment, color =Treatment)) +
   theme_classic() +
-  labs(x = "Date", y=expression(paste(" ",Rs," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
+  labs(x = "Date", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE))))  +
@@ -392,7 +393,7 @@ p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux,
 
 ##Temp Severity 
 p3 <- ggplot(all_years_timeseries_severity_temp, aes(x = week_group, y = ave_temp, group = Severity, color = Severity)) +
-  labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
+  labs(x = "Date", y=expression(paste(" ",T[s]," (",degree," C)"))) +
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE))))  +
@@ -408,7 +409,7 @@ p3 <- ggplot(all_years_timeseries_severity_temp, aes(x = week_group, y = ave_tem
 
 ##Temp Treatment 
 p4 <- ggplot(all_years_timeseries_treatment_temp, aes(x = week_group, y = ave_temp, group = Treatment, color = Treatment)) +
-  labs(x = "Date", y=expression(paste('Temp ('*~degree*C*')'))) +
+  labs(x = "Date", y = expression(paste(" ",T[s]," (",degree," C)"))) +
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE)))) +
@@ -549,7 +550,7 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
   scale_y_continuous(breaks = c(4,5,6,7,8),sec.axis = sec_axis(~ .,labels = NULL,breaks = c(4,5,6,7,8))) +
-  labs(x = "Treatment", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
+  labs(x = "Disturbance Type", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   geom_rect(data=data.frame(year='2018'), inherit.aes=FALSE,
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
@@ -589,9 +590,6 @@ shapiro_test(residuals(normality_test))
 rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 summary(rs_model)
 
-##Trying to export model summary 
-rs_model_out <- capture.output(summary(rs_model))
-cat("Rs_ANOVA", rs_model_out, file = "Rs_ANOVA")
 
 #Rs model with VWC covariate 
 rs_model_VWC <- aov(soilCO2Efflux  ~ Severity*Treatment*year +VWC + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
@@ -600,6 +598,10 @@ summary(rs_model_VWC)
 #Rs model with Temp covariate
 rs_model_temp <- aov(soilCO2Efflux  ~ Severity*Treatment*year +soilTemp + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 summary(rs_model_temp)
+
+##Print output 
+capture.output(summary(rs_model), file = "Rs_anova.doc")
+
 
 ###Comparing AIC Values for Rs models: Lowest AIC with model with VWC as covariate 
 rs_lm <- lm(soilCO2Efflux  ~ Severity*Treatment*year, data = all_years_summary)
@@ -626,7 +628,7 @@ out_year_VWC <- with(all_years_summary,LSD.test(VWC,year,72,0.76,console=TRUE))
 #Temp Model
 out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=TRUE))
 
-
+capture.output(summary(out_year_severity_rs), file = "Rs_LSD.doc")
 
 ###Model with VWC as dependent Variable 
 VWC_model <- aov(VWC  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
@@ -638,6 +640,26 @@ summary(temp_model)
 
 
 #####Heterotrophic Respiration Analysis 2019-2021#######
+
+##Degass trial for appendix 
+
+Rh_degass_summary <- Rh_degass%>%
+  group_by(Time_mins)%>%
+  summarize(ave_efflux = mean(Efflux_rate), std_efflux = std.error(Efflux_rate))
+
+ggplot(Rh_degass_summary, aes(x = Time_mins, y = ave_efflux)) +
+  geom_point(size = 5) +
+  geom_line() +
+  geom_errorbar(mapping=aes(x=Time_mins, ymin=ave_efflux - std_efflux, ymax=ave_efflux + std_efflux), size = 1, width = 2) +
+  theme_classic() +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35)) +
+  labs(x = "Time since lid was opened (mins)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  scale_x_continuous(breaks = c(10, 20, 30, 40, 50, 60, 70 ,80),sec.axis = sec_axis(~ .,labels = NULL, breaks = c(10, 20, 30, 40, 50, 60, 70 ,80)))
+
+ggsave(path = "Manuscript_figures", filename = "Figure S1.png",height = 10, width = 10 , units = "in")
+  
+
 ##Clean Dataframe 
 #2019
 Rh_2019_sub <- Rh_2019%>%
@@ -721,6 +743,7 @@ ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fil
   labs(x = "Severity (% Gross defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
 
 
+
 ##Plot Boxplot of absolute Rh value 
 ggplot(all_years_Rh_treatment, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
   theme_classic()+
@@ -782,6 +805,9 @@ summary(rh_model)
 rh_model_VWC <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year +ave_water_content_percent + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
 summary(rh_model_VWC)
 
+#Print output
+capture.output(summary(rh_model_VWC), file = "Rh_model.doc")
+
 ##AIC Values for Rh Models 
 rh_lm_VWC <- lm(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year +ave_water_content_percent, data = all_years_Rh_summary_transformed)
 summary(rh_lm_VWC)
@@ -810,6 +836,12 @@ all_years_Rh_severity_ONLY <-  all_years_Rh%>%
   group_by(Rep_ID,Severity)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
+all_years_Rh_severity <-  all_years_Rh%>%
+  filter(!is.na(soilCO2Efflux_umolg))%>%
+  group_by(Rep_ID,Severity,year)%>%
+  summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
+
+summary(all_years_Rh_severity)
 ##Plot Rh treatment all years
 Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
   theme_classic()+
@@ -818,7 +850,7 @@ Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Eff
   theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position="right") +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 11)
+  labs(x = "Disturbance Type", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 11)
 
   
 
@@ -830,7 +862,7 @@ Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflu
   theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Severity", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
+  labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
   annotate("text", x = 0.6, y = 0.0076, label = "A", size = 11)
 
 
@@ -849,7 +881,9 @@ ggsave(path = "Manuscript_figures",filename = "Figure_4.png",height = 10, width 
 #Post Hoc
 out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Severity,8,0.0391, console = TRUE))
 
-out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Treatment,11,0.0329, console = TRUE))
+out_treatment_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Treatment,11,0.0329, console = TRUE))
+
+out_year_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,year,47,0.099, console = TRUE))
 
 
 ####Q10 Calculations####
@@ -892,6 +926,7 @@ Q10_2 <- ggplot(all_years_Q10, aes(x = ave_soilTemp, y = ave_soilCO2Efflux, grou
               aes(color = Treatment)) +
   theme(axis.text.x = element_text(size = 30), axis.text.y= element_text(size=35), axis.title.x = element_text(size = 30),   axis.title.y  = element_text(size=35), legend.title = element_text(size = 25),  strip.text.x =element_text(size = 25), legend.text = element_text(size = 20), panel.background = element_rect(fill = NA, color = "black"),legend.position = c(0.13, 0.67)) +
   labs(x = expression("Soil Temperature ("*~degree*C*")"), y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+  guides(color = guide_legend(title = "Type"))+
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL), position = "right")+
   annotate("text", x = 0.6, y = 14.5, label = "B", size = 12)
 
@@ -929,6 +964,32 @@ param_model_Q10_a<- param_model_Q10%>%
 param_model_Q10_10 <-  merge(param_model_Q10_a,param_model_Q10_b,by= c("Rep_ID", "Severity", "Treatment"))%>%
 mutate(BR = (ave_soilCO2Efflux = intercept * exp(b * 10)))
 
+##Merging data frame with Q10 and BR with average efflux at the subplot level 
+##Summarizing the collars
+RS_Q10_dataframe <-  all_years_gs_nov%>%
+  filter(!is.na(soilTemp))%>%
+  filter(year != 2018)%>%
+  group_by(Rep_ID, Severity, Treatment, date, year)%>%
+  summarize(ave_soilCO2Efflux = mean(soilCO2Efflux), ave_soilTemp = mean(soilTemp))
+
+##Summarizing by suplot 
+RS_Q10_dataframe_summary <- RS_Q10_dataframe%>%
+  group_by(Rep_ID, Severity, Treatment)%>%
+  summarize(ave_soilCO2Efflux = mean(ave_soilCO2Efflux), ave_soilTemp = mean(ave_soilTemp))
+
+##merging the Q10 and BR dataframe with the summarized Rs 
+RS_Q10_dataframe_summary_merge<-  merge(param_model_Q10_10, RS_Q10_dataframe_summary, by= c("Rep_ID", "Severity", "Treatment"))
+
+###Trying a mulitvariate model from Ben 
+
+RS_Q10_dataframe_summary_merge$Severity <- as.numeric(RS_Q10_dataframe_summary_merge$Severity)
+RS_Q10_dataframe_summary_merge <- RS_Q10_dataframe_summary_merge%>%
+  mutate(Treatment_code = case_when(Treatment == "bottom" ~ 0, 
+                                    Treatment == "top" ~ 1))
+
+x <- RS_Q10_dataframe_summary_merge$ave_soilTemp
+
+
 ##Boxplots of Q10 Values and intercept values 
 ##Severity Q10
 Q10_3 <- ggplot(param_model_Q10_b, aes(x = Severity, y = Q10, fill = Severity)) +
@@ -949,7 +1010,7 @@ Q10_5 <- ggplot(param_model_Q10_10, aes(x = Severity, y = BR, fill = Severity)) 
   theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL))+
   labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",BR," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
-  annotate("text", x = 0.6, y = 5, label = "D", size = 12) +
+  annotate("text", x = 0.6, y = 5, label = "E", size = 12) +
   annotate("text", x = 1.2, y = 4.8, label = "a", size = 11) +
   annotate("text", x = 2, y = 4.2, label = "ab", size = 11) +
   annotate("text", x = 3, y = 3.8, label = "b", size = 11) +
@@ -964,8 +1025,8 @@ Q10_4 <- ggplot(param_model_Q10_b, aes(x = Treatment, y = Q10, fill = Treatment)
   geom_boxplot(width = 0.5)+
   theme(axis.text.x= element_blank(), axis.text.y= element_text(size=30), axis.title.x = element_blank(), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL),position = "right")+
-  labs(x = "Treatment", y = "Q10")+
-  annotate("text", x = 0.5, y = 3, label = "E", size = 12) +
+  labs(x = "Type", y = "Q10")+
+  annotate("text", x = 0.5, y = 3, label = "D", size = 12) +
   annotate("text", x = 2.4, y = 3, label = "ns", size = 11)
 
 ##Treatment BR
@@ -975,7 +1036,7 @@ Q10_6 <- ggplot(param_model_Q10_10, aes(x = Treatment, y = BR, fill = Treatment)
   geom_boxplot(width = 0.5)+
   theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL), position = "right")+
-  labs(x = "Treatment",  y=expression(paste(" ",BR," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
+  labs(x = "Disturbance Type",  y=expression(paste(" ",BR," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")")))+
   annotate("text", x = 0.5, y = 4.8, label = "F", size = 12)+
   annotate("text", x = 2.4, y =4.8, label = "ns", size = 11)
 
@@ -1129,6 +1190,9 @@ plot(pre_post_model)
 gvlma::gvlma(pre_post_model)
 
 
+capture.output(summary(multiple_regression_model), file = "Rs_regression_multiple1.doc")
+capture.output(summary(post_hoc_regression), file = "Rs_regression_multiple2.doc")
+capture.output(summary(pre_post_model), file = "Rs_pre_post.doc")
 
 #######Calculation Rh resistance Values 
 resistance_rh <- all_years_Rh_severity
@@ -1211,5 +1275,92 @@ resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
 ggsave("Figure_5.png",height = 10, width = 20, units = "in", resistance)
 
 
+###Predicting Hr from Rs at 100% girdled 
 
-   
+###Filter only Rs values from July and August, the months that Rh was estimated, group and average by severity and year and take out 2018 data (don't have Rh data from 2018)
+all_years_Rs_predict <- all_years_gs_nov%>%
+  filter(month(date) %in% c(7, 8))
+
+###convert Rs to gC m-2 yr-1
+library(bigleaf)
+all_years_Rs_predict$Rs_convert <- umolCO2.to.gC(all_years_Rs_predict$soilCO2Efflux)*365
+
+##Summarize by year, severity and replicate 
+all_years_Rs_predict_summary <- all_years_Rs_predict%>%
+  group_by(year, Severity, Rep_ID)%>%
+  summarize(Rs_ave_convert = mean(Rs_convert), std_error_efflux = std.error(Rs_convert))%>%
+  filter(year != 2018)
+all_years_Rs_predict_summary$Severity <- as.numeric(all_years_Rs_predict_summary$Severity)
+
+
+
+##Make a regression plot of Rs by Severity 
+ggplot(all_years_Rs_predict_summary, aes(x = Severity,y = Rs_ave_convert)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)+
+geom_errorbar(mapping=aes(x=Severity, ymin=Rs_ave_convert - std_error_efflux, ymax=Rs_ave_convert + std_error_efflux)) +
+  ylab("Average Rs") + xlab("Disturbance Severity (%)")
+  
+
+##Regression model for Rs by severity 
+regression_Rs_predict <- lm(Rs_ave_convert ~ Severity, data = all_years_Rs_predict_summary)
+summary(regression_Rs_predict)
+
+##Add a 100% prediction value
+complete_girdle <- data.frame(
+  Severity = c(100)
+)
+
+##Predict Rs at 100% severity and make a CI interval around that prediction
+predict(regression_Rs_predict, newdata = complete_girdle, interval = "prediction")
+
+
+
+##Create a data frame with the adjusted Rh values summarized by severity and year  
+all_years_Rh_severity_predict <- all_years_Rh%>%
+  filter(!is.na(soilCO2Efflux))%>%
+  filter(Severity == 0)
+
+###convert Rh to gC m-2 yr-1
+all_years_Rh_severity_predict$Rh_convert <- umolCO2.to.gC(all_years_Rh_severity_predict$soilCO2Efflux)*365
+
+##Summarize by year, severity and replicate 
+all_years_Rh_severity_predict_summary <- all_years_Rh_severity_predict%>%
+  group_by(year, Severity, Rep_ID)%>%
+  filter(Severity == 0)%>%
+  summarize(ave_Rh_convert = mean(Rh_convert),std_error_efflux = std.error(Rh_convert))
+
+
+
+####Using the equation from BBL et al 2004 and Subke et al 2006, estimate Rh from the 0% severity Rs values 
+
+##BBL equation 
+all_years_Rs_predict_0 <- all_years_Rs_predict_summary%>%
+  filter(Severity == 0)%>%
+  mutate(estimated_Rh_ln = 1.22 +0.73*log(Rs_ave_convert))%>%
+  mutate(estimated_Rh_BBL = exp(estimated_Rh_ln))
+
+##Subke et al equation (Rh is 50% of total Rs)
+all_years_Rs_predict_0 <- all_years_Rs_predict_0%>%
+  mutate(Rs_ratio_estimate = -0.138*log(Rs_ave_convert) +1.482)%>%
+  mutate(Rh_ratio_estimate_method = Rs_ave_convert*Rs_ratio_estimate)
+
+
+##Merge the Rh measurements with the Rh estimates 
+
+Rh_estimate_measurement <- merge(all_years_Rs_predict_0, all_years_Rh_severity_predict_summary,  by = c("Severity", "year", "Rep_ID"))
+
+Rh_estimate_measurement <- melt(Rh_estimate_measurement, id.vars = c("Severity", "year", "Rep_ID", "Rs_ave_convert"), variable.name = "Method")%>%
+  filter(Method == "estimated_Rh_BBL" |Method == "Rh_ratio_estimate_method"| Method == "estimated_Rh_BBL"| Method == "ave_Rh_convert")
+
+
+ggplot(Rh_estimate_measurement, aes(x = Method, y = value))+
+  geom_boxplot()
+
+
+
+
+
+
+
+
