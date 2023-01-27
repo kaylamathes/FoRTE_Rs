@@ -1,25 +1,25 @@
 ###########################################################
-####FoRTE Soil Respiration Data Analysis
-####2018-2021
-####Kayla C. Mathes  
+####Data Analysis and code for "Sustained three year decline in soil respiration is proportional to disturbance severity" 
+##Manuscript submitted to Ecosystems 
+####Authors: Kayla C. Mathes (lead-author and code author), Stephanie Pennington, Carly Rodriguez, Christoph Vogel, Ben Bond-Lamberty, Jeff Atkins(code writer), Christopher M. Gough
 ###########################################################
 
-###Load Packages
+###Required Packages 
 library(ggplot2) #all plots/visualization 
 library(dplyr) #all dataframe organization, cleaning and summarizing 
 library(stringr)
 library(plotrix)
 library(reshape2)
 library(ggpubr)
-library(rstatix)
+library(rstatix) ##Statistical analysis 
 library(tidyverse)
 library(googledrive)#upload data from googledrive 
 library(lubridate)
 library(scales)
 library(rcartocolor)
-library(gridExtra)
-library(gvlma)
-library(car)
+library(gridExtra) ##Creates multipaneled figures 
+library(gvlma) ## Statistical analysis 
+library(car) ##Statistical analysis
 library(ggprism) ##Checking linear regression assumptions
 library(emmeans) ##Running estimated means analysis 
 library(agricolae) ##runs the split-split plot ANOVA and LSD post-hoc tests
@@ -49,7 +49,6 @@ all_2018 <- read.csv("googledrive_data/Rs_2018.csv", na.strings = c("NA", "na"))
 all_2019 <- read.csv("googledrive_data/Rs_2019.csv", na.strings = c("NA","na"))
 all_2020 <- read.csv("googledrive_data/Rs_2020.csv", na.strings = c("NA","na"))
 all_2021 <- read.csv("googledrive_data/Rs_2021.csv", na.strings = c("NA","na"))
-all_2022 <- read.csv("googledrive_data/Rs_2022.csv", na.strings = c("NA","na"))
 Rh_2019 <- read.csv("googledrive_data/Rh_2019.csv", na.strings = c("NA", "na"))
 Rh_2020 <- read.csv("googledrive_data/Rh_2020.csv", na.strings = c("NA", "na", "#VALUE!"))
 Rh_2021 <- read.csv("googledrive_data/Rh_2021.csv", na.strings = c("NA", "na", "#VALUE!"))
@@ -87,16 +86,6 @@ all_2021_sub <- all_2021%>%
   select(!notes)%>%
   filter(!is.na(soilCO2Efflux))
 
-#2022: 
-
-all_2022_sub <- all_2022%>%
-  select(!notes)%>%
-  filter(!is.na(soilCO2Efflux))%>%
-  rename(nestedSubplot = nestSubplot)
-
-
-  
-
 
 #####Combine all years into one dataset 
 all_years <- rbind(all_2021_sub,all_2020_sub, all_2019_sub, all_2018_sub)
@@ -107,7 +96,6 @@ all_years$year <- format(all_years$date, format = "%Y")
 
 ##Combine Rep_ID, Plot_ID and Subplot into one column to create "subplot_code" column (This creates uniquely indentifiable code to add Disturbance Severity and Treatment columns)
 all_years$Subplot_code <- str_c(all_years$Rep_ID, '',all_years$Plot_ID,'', all_years$Subplot)
-
 
 
 ##Add severity and treatment values to all dataset using Subplot_code ####
@@ -284,16 +272,13 @@ all_years_grouped <- all_years%>%
 all_years_grouped$week_group <- as.Date(all_years_grouped$week_group)
 
 
-
-
-
 ######Create Full Rs, moisture and temperature timeseries####
 
 ##(Rs, soil temp and VWC were separated to get rid of NA values for each factor)
 #####Rs Timeseries 
 ###Summarize by subplots (Collars are sudo-replicates and that variation should not be represented in the model (subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary_timeseries <- all_years_grouped%>%
-  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
+  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code, year)%>%
   summarize(soilCO2Efflux = mean(soilCO2Efflux))
 
 ##Summarize by severity by replication per round of respiration 
@@ -328,7 +313,7 @@ all_years_timeseries_treatment_temp <- all_years_summary_timeseries_temp%>%
 ###Summarize by subplots (Collars are sudo-replicates and they variation should not be represented in the model subplot is the smallest unit, we are interested in variation across replicates).
 all_years_summary_timeseries_VWC <- all_years_grouped%>%
   filter(!is.na(VWC))%>%
-  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code)%>%
+  group_by(Rep_ID, week_group, Severity, Treatment, Subplot_code, year)%>%
   summarize(VWC =mean(VWC))
 
 
@@ -348,27 +333,42 @@ week_group <- all_years_timeseries_severity$week_group
 week_group_treatment <- all_years_timeseries_treatment$week_group
 
 
+####Create a figure showing linear relationship between Rs and VWC in control 
 
-###Create an overall summary dataframe for results section (Filter through the different combinations)
-all_years_summary_time_VWC <- all_years_grouped%>%
-  filter(!is.na(VWC))%>%
-  group_by( week_group, year, Rep_ID, Treatment, Severity)%>%
-  summarize(VWC = mean(VWC))%>%
-  filter(year == 2021)
+control_Rs_VWC <- merge(all_years_summary_timeseries_VWC, all_years_summary_timeseries, by = c("Rep_ID", "week_group", "Severity", "Treatment", "Subplot_code", "year"))%>%
+  filter(Severity == 0)%>%
+  filter(week_group == "2018-07-07" | week_group == "2018-08-10"| week_group == "2019-06-05" | week_group == "2019-07-08" | week_group == "2019-07-16" | week_group == "2019-07-24" |week_group == "2019-08-01"| week_group == "2020-07-07" |week_group == "2020-07-24" | week_group == "2020-08-05" |week_group == "2021-07-06" | week_group == "2021-08-03")%>%
+  group_by(year, Severity, Rep_ID)%>%
+  summarize(ave_efflux = mean(soilCO2Efflux), ave_VWC = mean(VWC))
 
- 
+##XAppendix S1
+##linear Regression 
+regression <- lm(ave_efflux~ave_VWC, data = control_Rs_VWC)
+summary(regression)
 
-######Figure 1: BIG Timeseries #####
+ggplot(control_Rs_VWC, aes(x = ave_VWC, y = ave_efflux))+
+  geom_point(aes(color = year),size = 5)+
+  theme_classic()+
+  scale_x_continuous(sec.axis = dup_axis(name = NULL, labels = NULL))+
+  scale_y_continuous(sec.axis = dup_axis(name = NULL, labels = NULL))+
+  geom_smooth(method = "lm", se = FALSE, color = "black")+
+  theme(axis.text = element_text(size = 25), axis.title = element_text(size = 30), legend.text = element_text(size = 20), legend.title = element_text(size = 25))+
+  labs(x = "Volumetric Water Content(%)", y=expression(paste(" ",R[s],"  (",mu*molCO[2]," ",m^-2," ",sec^-1,")")))
+
+ggsave(path = "Manuscript_figures", filename = "appendix_control_VWC_rs.png", height = 7, width = 10, units = "in")  
+
+
+######Figure 3: BIG Timeseries #####
 ##Rs Severity 
 p1 <- ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, group = Severity, color = Severity)) +
   theme_classic() +
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x),paste(month(x, label = TRUE), "\n", year(x)),paste(month(x, label = TRUE))))+
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 30), axis.title.y = element_text(size = 30),legend.text = element_text(size = 30), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,-0.4,-0.3,0.42,"cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 2, width = 10) +
+  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 35), axis.title.y = element_text(size = 40),legend.text = element_text(size = 30), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0,-0.3,0.42,"cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 2, width = 15) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
+  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 10, by = 1),sec.axis = dup_axis(name = NULL, labels = NULL))+
   guides(color=guide_legend(nrow=2, byrow=TRUE))+
   annotate("text", x = as.Date("2018-07-07"), y = 9.5, label = "A", size = 11) +
 geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5,color = "red3")+
@@ -381,12 +381,12 @@ p2 <- ggplot(all_years_timeseries_treatment, aes(x = week_group, y = ave_efflux,
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE))))  +
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 30), axis.title.y =  element_text(size = 30),legend.text = element_text(size = 30), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0.24,-0.3, -0.2,"cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 2, width = 10) +
+  theme(axis.text.x = element_blank(),axis.title.x = element_blank(), legend.position = c(0.15,0.78), axis.text.y = element_text(size = 35), axis.title.y =  element_text(size = 40),legend.text = element_text(size = 30), legend.title = element_blank(),legend.spacing.x = unit(0.1, 'cm'),legend.spacing.y = unit(0.1, 'cm'), plot.margin = margin(0,0.24,-0.3, -.7,"cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_efflux - std_error_efflux, ymax=ave_efflux + std_error_efflux), size = 2, width = 15) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 10, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL))+
+  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 10, by = 1),sec.axis = dup_axis(name = NULL, labels = NULL))+
   guides(color=guide_legend(nrow=2, byrow=TRUE)) +
   annotate("text", x = as.Date("2018-07-07"), y = 8, label = "B", size = 11) +
   geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5,color = "red3")
@@ -397,65 +397,66 @@ p3 <- ggplot(all_years_timeseries_severity_temp, aes(x = week_group, y = ave_tem
   scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE))))  +
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 2,width = 10) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 2,width = 15) +
   theme_classic() +
-  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 30), axis.title.y = element_text(size = 30), plot.margin = margin(0,-.4,-0.3,0.17, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y = element_text(size = 35), axis.title.y = element_text(size = 40), plot.margin = margin(0,0,-0.3,0.17, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  scale_y_continuous(position = "left",breaks = seq(from = 0, to = 26, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL)) +
   annotate("text", x = as.Date("2018-07-07"), y = 21.5, label = "C", size = 11) +
   geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5,color = "red3")
 
 ##Temp Treatment 
 p4 <- ggplot(all_years_timeseries_treatment_temp, aes(x = week_group, y = ave_temp, group = Treatment, color = Treatment)) +
   labs(x = "Date", y = expression(paste(" ",T[s]," (",degree," C)"))) +
-  scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
+  scale_x_date(date_breaks = "4 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
                                                                       paste(month(x, label = TRUE)))) +
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 2,width = 10) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_temp - std_error_temp, ymax=ave_temp + std_error_temp), size = 2,width = 15) +
   theme_classic() +
-  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y  = element_text(size = 30), axis.title.y = element_text(size = 30), plot.margin = margin(0,0,-0.3,-0.2, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),legend.position = "none", axis.text.y  = element_text(size = 35), axis.title.y = element_text(size = 40), plot.margin = margin(0,0,-0.3,-.7, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  scale_y_continuous(position = "right",breaks = seq(from = 0, to = 26, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL)) +
   annotate("text", x = as.Date("2018-07-07"), y = 21, label = "D", size = 11) +
  geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5, color = "red3")
 
 ##VWC Severity 
 p5 <- ggplot(all_years_timeseries_severity_VWC, aes(x = week_group, y = ave_VWC, group = Severity, color = Severity)) +
   labs(x = "Date", y= "VWC (%)") +
-  scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
+  scale_x_date(date_breaks = "4 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                       paste(month(x, label = TRUE), "\n", year(x)), 
-                                                                      paste(month(x, label = TRUE)))) +
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+                                                                     paste(month(x, label = TRUE)))) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size =2, width = 10) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size =2, width = 15) +
   theme_classic() +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-  scale_y_continuous(position = "left",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
-  theme(axis.text.y = element_text(size = 30), axis.title.y = element_text(size = 30), legend.position = "none", axis.text.x = element_text(size = 30),  axis.title.x = element_blank(), plot.margin = margin(0,-.40,0,0.37, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  scale_y_continuous(position = "left",breaks = seq(from = 0, to = 20, by = 2),sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  theme(axis.text.y = element_text(size = 35), axis.title.y = element_text(size = 40), legend.position = "none", axis.text.x = element_text(size = 35),  axis.title.x = element_blank(), plot.margin = margin(0,0,0,0.40, "cm"),panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
   guides(color=guide_legend(nrow=2, byrow=TRUE)) +
   annotate("text", x = as.Date("2018-07-07"), y = 19, label = "E", size = 11) +
   geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5, color = "red3")
-  
-all_years_timeseries_treatment_VWC$week_group <- as.Date(all_years_timeseries_treatment_VWC$week_group)
+
 
 ##VWC Treatment 
 p6 <- ggplot(all_years_timeseries_treatment_VWC, aes(x = week_group, y = ave_VWC, group = Treatment, color = Treatment)) +
   labs(x = "Date", y= "VWC (%)") +
-  geom_path(size = 2, alpha = 0.9, linetype = 2) +
+  geom_path(size = 1, alpha = 0.5, linetype = 2) +
   geom_point(size = 10) +
-  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 2, width = 10) +
+  geom_errorbar(mapping=aes(x=week_group, ymin=ave_VWC - std_error_VWC, ymax=ave_VWC + std_error_VWC), size = 2, width = 15) +
   theme_classic() +
   scale_color_manual(values=c("#A6611A", "#018571")) +
-  scale_y_continuous(position = "right",breaks = seq(from = 1, to = 30, by = 5),sec.axis = dup_axis(name = NULL, labels = NULL)) +
-  theme(axis.text.y  = element_text(size = 30), axis.title.y  = element_text(size = 30), legend.position = "none", axis.text.x = element_text(size = 30),  axis.title.x = element_blank(), plot.margin = margin(0,.20,0,-0.2, "cm"), strip.placement = "outside",panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
+  scale_y_continuous(position = "right", breaks = seq(from = 0, to = 20, by = 2),  minor_breaks = seq(0, 20, by = 1), sec.axis = dup_axis(name = NULL, labels = NULL)) +
+  theme(axis.text.y  = element_text(size = 35), axis.title.y  = element_text(size = 40), legend.position = "none", axis.text.x = element_text(size = 35),  axis.title.x = element_blank(), plot.margin = margin(0,.20,0,-.7, "cm"), strip.placement = "outside",panel.border = element_rect(colour = "black", fill=NA, size=1),axis.ticks.length=unit(.35, "cm")) +
   guides(color=guide_legend(nrow=2, byrow=TRUE)) +
-  scale_x_date(date_breaks = "3 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
+  scale_x_date(date_breaks = "4 months", date_minor_breaks = "1 month", labels = function(x) if_else(is.na(lag(x)) | !year(lag(x)) == year(x), 
                                                                        paste(month(x, label = TRUE), "\n", year(x)), 
-                                                                       paste(month(x, label = TRUE)))) +
+                                                                       
+                                                                          paste(month(x, label = TRUE)))) +
+  
   annotate("text", x = as.Date("2018-07-07"), y = 18, label = "F", size = 11) +
   geom_vline(xintercept = as.Date("2019-05-20"), linetype="dashed", size=1.5, color = "red3")
 
@@ -473,7 +474,7 @@ layout <- rbind(c(1,2),
                 c(5,6))
 g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_grob, layout_matrix=layout)
 
-ggsave(path = "Manuscript_figures", filename = "Figure_1.png", height = 20, width = 30, units = "in", g_timeseries)
+ggsave(path = "Manuscript_figures", filename = "Figure_timeseries.png", height = 20, width =30, units = "in", g_timeseries)
 
 
 
@@ -499,39 +500,20 @@ all_years_summary_severity$year <- as.factor(all_years_summary_severity$year)
 
 
 ######Visualize Rs data by severity by Year##
-###Figure 2
+###Figure 4
 ##Boxplot of replicate averages across disturbance severity per year 
 ggplot(all_years_summary_severity,aes(x = Severity, y = ave_efflux, fill = Severity)) +
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
-  theme_classic2()+
+  theme_classic(base_size = 20)+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",axis.ticks.length=unit(.35, "cm"),prism.ticks.length = unit(0.25, "cm"), panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(breaks=pretty_breaks(n=7),sec.axis = sec_axis(~ .,labels = NULL, breaks=pretty_breaks(n=7))) +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",axis.ticks.length=unit(.35, "cm"),prism.ticks.length = unit(0.25, "cm"))+ #panel.background = element_rect(fill = NA, color = "black")) 
   facet_grid(.~year,scales="free")+ 
   guides(col = guide_legend(nrow = 2)) +
   labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   geom_rect(data=data.frame(year='2018'), inherit.aes=FALSE,
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
-ggsave(path ="Manuscript_figures", filename = "Figure_2.png",height = 10, width = 15 , units = "in")
-
-
-########Create dataframe and boxplot of only control Rs by year to show the control Rs has been increasing####
-# all_years_summary_severity_control <- all_years_summary_severity%>%
-#   filter(Severity == 0)
-
-# ggplot(all_years_summary_severity_control,aes(x = Severity, y = ave_efflux, fill = Severity)) +
-#   scale_fill_manual(values=c("#000000"))+
-#   theme_classic()+
-#   geom_boxplot(width=0.3)+
-#   theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",axis.ticks.length=unit(.35, "cm"),prism.ticks.length = unit(0.25, "cm")) +
-#   scale_y_continuous(breaks=pretty_breaks(n=7),sec.axis = sec_axis(~ .,labels = NULL, breaks=pretty_breaks(n=7))) +
-#   facet_grid(.~year,scales="free")+ 
-#   guides(col = guide_legend(nrow = 2)) +
-#   labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) 
-# ggsave("severity_boxplot_control.png",height = 7, width = 10 , units = "in")
-
-
+ggsave(path ="Manuscript_figures", filename = "Figure_Rs_severity.png",height = 10, width = 15 , units = "in")
 
 
 #####Summarize data by Treatment######
@@ -540,7 +522,7 @@ all_years_summary_treatment <- all_years_gs_nov%>%
   group_by(year, Rep_ID, Treatment)%>%
   summarize(ave_efflux = mean(soilCO2Efflux), std_error_efflux = std.error(soilCO2Efflux))
 
-####Figure 3
+####Figure 5
 ####Create a boxplot of Rs by treatment by year 
 ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Treatment)) +
   scale_fill_manual(values=c("#A6611A", "#018571"))+
@@ -554,7 +536,7 @@ ggplot(all_years_summary_treatment,aes(x = Treatment, y = ave_efflux, fill = Tre
   geom_rect(data=data.frame(year='2018'), inherit.aes=FALSE,
             xmin = 0, xmax = 5, ymin= 0, ymax= Inf,
             fill = 'grey20', alpha = 0.2)
-ggsave(path = "Manuscript_figures", filename = "Figure_3.png",height = 10, width = 15 , units = "in")
+ggsave(path = "Manuscript_figures", filename = "Figure_Rs_treatment.png",height = 10, width = 15 , units = "in")
 
 
 #########Split plot Model for absolute data#####
@@ -630,19 +612,12 @@ out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=T
 
 capture.output(summary(out_year_severity_rs), file = "Rs_LSD.doc")
 
-###Model with VWC as dependent Variable 
-VWC_model <- aov(VWC  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
-summary(VWC_model)
-
-#Model with soil temperature as dependent Variable 
-temp_model <- aov(soilTemp  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
-summary(temp_model)
 
 
 #####Heterotrophic Respiration Analysis 2019-2021#######
 
 ##Degass trial for appendix 
-
+##Apendix Figure S2
 Rh_degass_summary <- Rh_degass%>%
   group_by(Time_mins)%>%
   summarize(ave_efflux = mean(Efflux_rate), std_efflux = std.error(Efflux_rate))
@@ -657,7 +632,7 @@ ggplot(Rh_degass_summary, aes(x = Time_mins, y = ave_efflux)) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   scale_x_continuous(breaks = c(10, 20, 30, 40, 50, 60, 70 ,80),sec.axis = sec_axis(~ .,labels = NULL, breaks = c(10, 20, 30, 40, 50, 60, 70 ,80)))
 
-ggsave(path = "Manuscript_figures", filename = "Figure S1.png",height = 10, width = 10 , units = "in")
+ggsave(path = "Manuscript_figures", filename = "Appendix_degass.png",height = 10, width = 10 , units = "in")
   
 
 ##Clean Dataframe 
@@ -730,29 +705,6 @@ all_years_Rh_treatment <- all_years_Rh%>%
   group_by(Rep_ID, year, Treatment)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
-
-###Plot boxplots of absolute Rh values 
-ggplot(all_years_Rh_severity, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
-  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
-  theme_classic()+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  guides(col = guide_legend(nrow = 2)) +
-  facet_grid(.~year,scales="free")+ 
-  labs(x = "Severity (% Gross defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
-
-
-
-##Plot Boxplot of absolute Rh value 
-ggplot(all_years_Rh_treatment, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
-  theme_classic()+
-  geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  guides(col = guide_legend(nrow = 2)) +
-  facet_grid(.~year,scales="free")+ 
-  labs(x = "Treatment", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
 
 ##Testing water content with Rh
 VWC_Rh_model <- lm(soilCO2Efflux_umolg ~ water_content_percent, data = all_years_Rh)
@@ -838,10 +790,12 @@ all_years_Rh_severity_ONLY <-  all_years_Rh%>%
 
 all_years_Rh_severity <-  all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
-  group_by(Rep_ID,Severity,year)%>%
+  group_by(Rep_ID,year,Severity)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg))
 
 summary(all_years_Rh_severity)
+
+###Figure 6
 ##Plot Rh treatment all years
 Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Efflux_umolg, fill = Treatment)) +
   theme_classic()+
@@ -852,31 +806,27 @@ Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Eff
   guides(col = guide_legend(nrow = 2)) +
   labs(x = "Disturbance Type", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 11)
 
-  
-
 ##Plot Rh Severity all years
 Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
-  theme_classic()+
+  theme_classic(base_size = 20)+
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   geom_boxplot()+
-  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none",panel.background = element_rect(fill = NA, color = "black")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  theme(axis.text.x= element_text(size = 30), axis.text.y= element_text(size=30), axis.title.x = element_text(size = 35), axis.title.y  = element_text(size=35), legend.title = element_blank(),  strip.text.x =element_text(size = 30), legend.text = element_blank(), legend.position = "none")+  #panel.background = element_rect(fill = NA, color = "black")) +
   guides(col = guide_legend(nrow = 2)) +
-  labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +
-  annotate("text", x = 0.6, y = 0.0076, label = "A", size = 11)
-
+  labs(x = "Severity (% Gross Defoliation)", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) 
+  #annotate("text", x = 0.6, y = 0.0076, label = "A", size = 11)
 
 #Rh  Multipanel Figure 
 Rh_1_grob <- ggplotGrob(Rh1)
 Rh_2_grob <- ggplotGrob(Rh2)
-
 
 layout <- rbind(c(1,2))
 
 
 Rh <- grid.arrange(Rh_2_grob,Rh_1_grob, layout_matrix=layout)
 
-ggsave(path = "Manuscript_figures",filename = "Figure_4.png",height = 10, width = 20, units = "in", Rh)
+ggsave(path = "Manuscript_figures",filename = "Figure_Rh.png",height = 10, width = 20, units = "in", Rh)
+
 
 #Post Hoc
 out_severity_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux_umolg_transformed,Severity,8,0.0391, console = TRUE))
@@ -959,8 +909,6 @@ param_model_Q10_a<- param_model_Q10%>%
   rename(intercept = a)
 
 
-
-
 param_model_Q10_10 <-  merge(param_model_Q10_a,param_model_Q10_b,by= c("Rep_ID", "Severity", "Treatment"))%>%
 mutate(BR = (ave_soilCO2Efflux = intercept * exp(b * 10)))
 
@@ -989,7 +937,7 @@ RS_Q10_dataframe_summary_merge <- RS_Q10_dataframe_summary_merge%>%
 
 x <- RS_Q10_dataframe_summary_merge$ave_soilTemp
 
-
+###Figure 7
 ##Boxplots of Q10 Values and intercept values 
 ##Severity Q10
 Q10_3 <- ggplot(param_model_Q10_b, aes(x = Severity, y = Q10, fill = Severity)) +
@@ -1054,7 +1002,7 @@ layout_Q10 <- rbind(c(1,2),
                     c(5,6))
 g_Q10 <- grid.arrange(Q10_1_grob, Q10_2_grob, Q10_3_grob, Q10_4_grob,Q10_5_grob,Q10_6_grob,layout_matrix=layout_Q10)
 
-ggsave(path = "Manuscript_figures", filename = "Q10_summary.png", height = 25, width = 25, units = "in",g_Q10 )
+ggsave(path = "Manuscript_figures", filename = "Figure_Q10_summary.png", height = 25, width = 25, units = "in",g_Q10 )
 
 
 ###Build split-plot statistical model for Q10 and Intercept values 
@@ -1118,7 +1066,6 @@ summary(intercept_model)
 out_severity_intercept <- with(param_model_Q10_10, LSD.test(BR,Severity,9,0.4937, console = TRUE))
 
 
-
 #########Calculating Resistance ######
 resistance_rs <- all_years_summary_severity
 
@@ -1144,7 +1091,6 @@ resistance_rs <- all_years_summary_severity
   summarize(ave_log_response = mean(log_response), std_err = std.error(log_response), .groups = "drop")
   
 resistance_rs$Severity <- as.numeric(resistance_rs$Severity)
-
 
 ##Run regression analysis for Rs resistance by severity with year*severity interaction. 2019,2020, 2021 all have significant linear decline with increasing disturbance severity. The slopes for each year post disturbance are not statistically different (overlapping 95% CI), but they are all significantly different than 2018. 
 
@@ -1232,36 +1178,39 @@ summary(post_hoc_regression_Rh)
 
 
 ###Plot Rs and Rh resistance by severity per year with regression line representing average slope post disturbance years 
-####Figure 5
 
+####Figure 8
 ##Rs
 Rs_rt <- ggplot(resistance_rs, aes(x = Severity, y = ave_log_response, color = year)) +
   theme_classic()+
   geom_point(aes(colour = year), size = 10)+
   scale_color_manual(values=c("#072F5F", "#1261A0", "#3895D3", "#56CCED")) +
   geom_smooth(method = "lm", se = FALSE, data=subset(resistance_rs,pre_post=post), color = "darkgrey", size = 3, show.legend = FALSE, alpha = 0.5)+
-  theme(axis.text= element_text(size = 35), axis.title = element_text(size = 40),  legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.2,.25),plot.margin = margin(0,0,0,0, "cm"),axis.ticks.length=unit(.35, "cm")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  theme(axis.text.x = element_text(size = 35), axis.title.x  = element_text(size = 40), axis.text.y.right = element_blank(),axis.title.y.right = element_blank(),axis.text.y.left = element_text(size = 35), axis.title.y.left= element_text(size = 40) , legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.2,.25),plot.margin = margin(0,0,0,-0.8, "cm"),axis.ticks.length.y =unit(.35, "cm"),axis.ticks.x.top = element_blank()) +
+  scale_y_continuous(sec.axis = sec_axis((~ ((exp(.)-1)*100)), name = "% Difference",breaks = seq(from = -50, to = 30, by = 10)), limits = c(-0.7, 0.2)) +
   scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), size = 1, width = 3)+
   geom_hline(yintercept = 0, linetype = "dashed", size = 2) +
-  labs(y=expression(paste(" ",R[s]," Resistance ")), x = "Severity (% Gross Defoliation)") +
+  labs(y = " Resistance ", x = "Severity (% Gross Defoliation)") +
   guides(color = guide_legend(title = "Year")) +
-  annotate("text", x = 0, y = 0.19, label = "A", size = 12)
+  annotate("text", x = 0, y = 0.19, label = "A", size = 12)+
+  theme(axis.text.y.right = element_blank(), axis.title.y.right = element_blank(),axis.text = element_text(size = 35), axis.title = element_text(size = 40), legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.2,.25),plot.margin = margin(0,0,0,0, "cm"),axis.ticks.length.y =unit(.35, "cm"), axis.ticks.x.top = element_blank()) 
+
 
 
 Rh_rt <- ggplot(resistance_rh, aes(x = Severity, y = ave_log_response, color = year)) +
   theme_classic()+
+  scale_y_continuous(sec.axis = sec_axis((~ ((exp(.)-1)*100)), name = "% Difference",breaks = seq(from = -50, to = 20, by = 10)), limits = c(-0.7,0.2))+
   geom_point(aes(colour = year), size = 10)+
   scale_color_manual(values=c("#1261A0", "#3895D3", "#56CCED")) +
-  theme(axis.text= element_text(size = 35), axis.title = element_text(size = 40), legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.2,.25),plot.margin = margin(0,0,0,0, "cm"),axis.ticks.length=unit(.35, "cm")) +
-  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL), position = "right") +
+  theme(axis.text.x = element_text(size = 35), axis.title.x  = element_text(size = 40), axis.text.y.left = element_blank(),axis.title.y.left = element_blank(),axis.text.y.right = element_text(size = 35), axis.title.y.right= element_text(size = 40) , legend.text = element_text(size = 30), legend.title = element_text(size = 35), legend.position = c(.2,.25),plot.margin = margin(0,0,0,-0.8, "cm"),axis.ticks.length.y =unit(.35, "cm"),axis.ticks.x.top = element_blank()) +
   scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
   geom_errorbar(aes(ymin=ave_log_response - std_err, ymax=ave_log_response + std_err, colour = year), size = 1, width = 3)+
   geom_hline(yintercept = 0, linetype = "dashed", size = 2) +
-  labs(y=expression(paste(" ",R[h]," Resistance ")), x = "Severity (% Gross Defoliation)") +
+  labs(y="Resistance", x = "Severity (% Gross Defoliation)") +
   guides(color = guide_legend(title = "Year")) +
-  annotate("text", x = 0, y = 0.14, label = "B", size = 12)
+  annotate("text", x = 0, y = 0.19, label = "B", size = 12)
+ 
 
 #Resistance Multipanel Figure 
 Rs_rt_grob <- ggplotGrob(Rs_rt)
@@ -1272,95 +1221,218 @@ layout <- rbind(c(1,2))
             
                
 resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
-ggsave("Figure_5.png",height = 10, width = 20, units = "in", resistance)
-
-
-###Predicting Hr from Rs at 100% girdled 
-
-###Filter only Rs values from July and August, the months that Rh was estimated, group and average by severity and year and take out 2018 data (don't have Rh data from 2018)
-all_years_Rs_predict <- all_years_gs_nov%>%
-  filter(month(date) %in% c(7, 8))
-
-###convert Rs to gC m-2 yr-1
-library(bigleaf)
-all_years_Rs_predict$Rs_convert <- umolCO2.to.gC(all_years_Rs_predict$soilCO2Efflux)*365
-
-##Summarize by year, severity and replicate 
-all_years_Rs_predict_summary <- all_years_Rs_predict%>%
-  group_by(year, Severity, Rep_ID)%>%
-  summarize(Rs_ave_convert = mean(Rs_convert), std_error_efflux = std.error(Rs_convert))%>%
-  filter(year != 2018)
-all_years_Rs_predict_summary$Severity <- as.numeric(all_years_Rs_predict_summary$Severity)
-
-
-
-##Make a regression plot of Rs by Severity 
-ggplot(all_years_Rs_predict_summary, aes(x = Severity,y = Rs_ave_convert)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE)+
-geom_errorbar(mapping=aes(x=Severity, ymin=Rs_ave_convert - std_error_efflux, ymax=Rs_ave_convert + std_error_efflux)) +
-  ylab("Average Rs") + xlab("Disturbance Severity (%)")
-  
-
-##Regression model for Rs by severity 
-regression_Rs_predict <- lm(Rs_ave_convert ~ Severity, data = all_years_Rs_predict_summary)
-summary(regression_Rs_predict)
-
-##Add a 100% prediction value
-complete_girdle <- data.frame(
-  Severity = c(100)
-)
-
-##Predict Rs at 100% severity and make a CI interval around that prediction
-predict(regression_Rs_predict, newdata = complete_girdle, interval = "prediction")
-
-
-
-##Create a data frame with the adjusted Rh values summarized by severity and year  
-all_years_Rh_severity_predict <- all_years_Rh%>%
-  filter(!is.na(soilCO2Efflux))%>%
-  filter(Severity == 0)
-
-###convert Rh to gC m-2 yr-1
-all_years_Rh_severity_predict$Rh_convert <- umolCO2.to.gC(all_years_Rh_severity_predict$soilCO2Efflux)*365
-
-##Summarize by year, severity and replicate 
-all_years_Rh_severity_predict_summary <- all_years_Rh_severity_predict%>%
-  group_by(year, Severity, Rep_ID)%>%
-  filter(Severity == 0)%>%
-  summarize(ave_Rh_convert = mean(Rh_convert),std_error_efflux = std.error(Rh_convert))
-
-
-
-####Using the equation from BBL et al 2004 and Subke et al 2006, estimate Rh from the 0% severity Rs values 
-
-##BBL equation 
-all_years_Rs_predict_0 <- all_years_Rs_predict_summary%>%
-  filter(Severity == 0)%>%
-  mutate(estimated_Rh_ln = 1.22 +0.73*log(Rs_ave_convert))%>%
-  mutate(estimated_Rh_BBL = exp(estimated_Rh_ln))
-
-##Subke et al equation (Rh is 50% of total Rs)
-all_years_Rs_predict_0 <- all_years_Rs_predict_0%>%
-  mutate(Rs_ratio_estimate = -0.138*log(Rs_ave_convert) +1.482)%>%
-  mutate(Rh_ratio_estimate_method = Rs_ave_convert*Rs_ratio_estimate)
-
-
-##Merge the Rh measurements with the Rh estimates 
-
-Rh_estimate_measurement <- merge(all_years_Rs_predict_0, all_years_Rh_severity_predict_summary,  by = c("Severity", "year", "Rep_ID"))
-
-Rh_estimate_measurement <- melt(Rh_estimate_measurement, id.vars = c("Severity", "year", "Rep_ID", "Rs_ave_convert"), variable.name = "Method")%>%
-  filter(Method == "estimated_Rh_BBL" |Method == "Rh_ratio_estimate_method"| Method == "estimated_Rh_BBL"| Method == "ave_Rh_convert")
-
-
-ggplot(Rh_estimate_measurement, aes(x = Method, y = value))+
-  geom_boxplot()
+ggsave(path = "Manuscript_Figures", filename = "Figure_resistance.png",height = 10, width = 20, units = "in", resistance)
 
 
 
 
+####Forest Inventory and VAI visualization 
+##Code adapted from Jeff W. Atkins and data taken from fortadata R package (Atkins et al. 2021)
+
+
+require(devtools)
+require(fortedata)
+library(tidyverse)
 
 
 
+##### PLOT METADATA
+df <- fortedata:::fd_plot_metadata()
+
+df <- data.frame(df)
+df$subplot_id <- paste(df$replicate, 0, df$plot, df$subplot, sep = "")
+df$subplot_id <- as.factor(df$subplot_id)
+
+df %>%
+  select(subplot_id, disturbance_severity, treatment, replicate) %>%
+  distinct() %>%
+  na.omit() %>%
+  data.frame() -> x
+
+## bring in the inventory and mortalitiy data sets
+mor <- fd_mortality()
+inv <- fd_inventory()
+#inv <- fd_inventory()
+
+
+# counts
+sum(inv$dbh_cm > 8, na.rm = TRUE)
+
+# filter out
+inv %>%
+  select(species, subplot_id, tag, dbh_cm, health_status) %>%
+  filter(dbh_cm > 8 & health_status == "L") %>% 
+  data.frame() -> inv2
+
+mor %>%
+  select( subplot_id, tag, dbh_cm, health_status, fate) %>%
+  filter(dbh_cm > 8 & health_status == "L") %>% 
+  data.frame() -> mor2
+# make factors
+mor$subplot_id <- as.factor(mor$subplot_id)
+
+# calc biomass
+bio <- calc_biomass()
+# filter out
+bio %>%
+  select( subplot_id, tag, dbh_cm, health_status, biomass) %>%
+  filter(dbh_cm > 8 & health_status == "L") %>% 
+  data.frame() -> bio2
+
+df <- merge(mor2, bio2)
+df <- merge(df, x)
+
+# group by disturbance, treatment
+df %>%
+  group_by(replicate, disturbance_severity, treatment, fate) %>%
+  summarize(total_biomass = sum(biomass, na.rm = TRUE)) %>%
+  data.frame() -> plot.sums
+
+plot.sums$biomass_mg <- round((plot.sums$total_biomass * 0.001), 2)
+# make wide/
+plot.sums %>%
+  spread(key = fate, value = total_biomass) -> plot.wide
+
+plot.wide$kill_mg <- round((plot.wide$kill * 0.001), 2)
+
+plot.wide[is.na(plot.wide)] <- 0
+
+# forta coloring
+forte_pal <- forte_colors()
+facet.labs <- c("B" = "Bottom-Up", "T" = "Top-Down")
+
+plot.sums2 <- plot.sums%>%
+  group_by(disturbance_severity, treatment, fate)%>%
+  summarize(ave_biomass_mg = mean(biomass_mg), std_error = std.error(biomass_mg))
+
+
+plot.sums_fig <- plot.sums2 %>% 
+  group_by(disturbance_severity, treatment) %>% 
+  arrange(disturbance_severity, treatment) %>% 
+  mutate(errorbars = case_when(
+    fate == "live" ~ ave_biomass_mg,
+   fate == "kill" ~ sum(ave_biomass_mg)))
+
+
+###Figure 1
+p.bio <-  ggplot(plot.sums_fig, aes(x = as.factor(disturbance_severity), y = ave_biomass_mg, fill = as.factor(disturbance_severity), alpha = fate))+
+  geom_bar(stat = "identity", position= "stack", width = 0.5, color = "black")+
+  xlab("Severity (% Gross Defoliation)")+
+  ylab("Biomass (Mg)")+
+  theme_classic()+
+  geom_errorbar(mapping=aes(ymin = errorbars - std_error, ymax=errorbars + std_error), width = 0.3, size =1)+
+  scale_fill_manual(values = forte_pal,
+                    labels = NULL)+
+  scale_alpha_ordinal(NULL, range = c(0.5, 1),
+                      labels = c("Pre-Treatment", "Post-Treatment"))+
+  facet_grid(.~treatment, labeller = labeller(treatment = facet.labs))+
+  guides(fill = FALSE)+
+  theme(axis.title = element_text(size = 35),axis.text = element_text(size = 30), legend.text = element_text(size = 30), strip.text = element_text(size = 30), legend.position = "top", plot.margin = margin(0,0,0.8,0, "cm")) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) 
+
+
+
+#### VAI
+# bring in canopy structure
+x <- fd_canopy_structure()
+
+
+forte_pal <- forte_colors()
+
+
+# bring in metadata via the plot_metadata() function
+
+# bring in metadata via the plot_metadata() function
+df <- fortedata::fd_plot_metadata()
+
+# now we convert the tibble to a data frame
+df <- data.frame(df)
+
+# First we want to concatenate our replicate, plot and subplot data to make a subplot_id column 
+df$subplot_id <- paste(df$replicate, 0, df$plot, df$subplot, sep = "")
+df$subplot_id <- as.factor(df$subplot_id)
+
+# Now that we have our data in the form for this analysis, let's filter our metadata to the subplot level.
+df %>%
+  dplyr::select(subplot_id, disturbance_severity, treatment) %>%
+  dplyr::distinct() %>%
+  data.frame() -> dis.meta.data
+
+# this filters the metadata down to the subplot_id level
+dis.meta.data <- dis.meta.data[c(1:32), ]
+
+# Then we merge with the metadata from above
+x <- merge(x, dis.meta.data)
+
+x2 <- x%>%
+  group_by(replicate, disturbance_severity, year, treatment)%>%
+  summarize(vai_mean = mean(vai_mean))
+
+x_severity <- x%>%
+  group_by(replicate, disturbance_severity, year)%>%
+  summarize(vai_mean = mean(vai_mean))
+
+# first let's make some new, more informative labels for our facets
+
+###Figure 1
+p.vai <- ggplot(x_severity, aes(y = vai_mean, x = as.factor(disturbance_severity), fill = as.factor(disturbance_severity)))+
+  geom_boxplot()+
+  #geom_jitter(position = position_jitter(0.2), shape = 21, alpha = 0.3)+
+  xlab("Severity (% Gross Defoliation)")+
+  ylab("VAI")+
+  theme_classic()+
+  scale_color_manual(values = forte_pal, guide = none)+
+  scale_fill_manual(values = forte_pal,
+                    name = "Disturbance Severity",
+                    labels = c("0%", "45%", "65%", "85%"))+
+  theme(legend.position = "none")+
+  facet_grid( ~ year) +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  theme(axis.title = element_text(size = 35),axis.text = element_text(size = 30),  strip.text = element_text(size = 30),plot.margin = margin(1,0,0,0, "cm") )
+
+
+p.vai <- ggplotGrob(p.vai)
+p.bio <- ggplotGrob(p.bio)
+
+
+layout <- rbind(c(1),
+                (2))
+
+vai_bio <- grid.arrange(p.bio, p.vai, layout_matrix=layout)
+
+ggsave(path = "Manuscript_figures", filename = "Figure_biomass_VAI.png", height = 23, width =28, units = "in", vai_bio)
+
+
+##Transform variables into factors for model 
+x2$disturbance_severity <- as.factor(x2$disturbance_severity)
+x2$treatment <- as.factor(x2$treatment)
+x2$year <- as.factor(x2$year)
+
+####Testing Assumptions 
+##Test for outliers test: no extreme outliers
+x2 %>% 
+  group_by(disturbance_severity, treatment, year) %>%
+  identify_outliers(vai_mean)
+
+##Equality of variance test for severity and treatment (Slightly unequal data using alpha = 0.05. Equal variance using alpha = 0.1)
+leveneTest(vai_mean ~ year*treatment*disturbance_severity, data = x2)
+
+##Normality 
+# Build the linear model
+normality_test  <- lm(vai_mean ~ disturbance_severity*treatment*year,
+                      data = x2)
+
+# Create a QQ plot of residuals
+ggqqplot(residuals(normality_test))
+# Shapiro test of normality 
+shapiro_test(residuals(normality_test))
+
+
+####WORKING SPLIT-SPLIT MODEL: Using aov(). Same results as the agricolae package. 
+
+vai_model <- aov(vai_mean  ~ disturbance_severity*treatment*year + Error(replicate/disturbance_severity/treatment/year), data = x2)
+summary(vai_model)
+
+
+out_year_severity_vai <- with(x2, LSD.test(vai_mean, disturbance_severity:year,69, 0.317, console = TRUE))
 
