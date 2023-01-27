@@ -358,7 +358,7 @@ ggplot(control_Rs_VWC, aes(x = ave_VWC, y = ave_efflux))+
 ggsave(path = "Manuscript_figures", filename = "appendix_control_VWC_rs.png", height = 7, width = 10, units = "in")  
 
 
-######Figure 3: BIG Timeseries #####
+###### BIG Timeseries #####
 ##Rs Severity 
 p1 <- ggplot(all_years_timeseries_severity, aes(x = week_group, y = ave_efflux, group = Severity, color = Severity)) +
   theme_classic() +
@@ -479,7 +479,7 @@ ggsave(path = "Manuscript_figures", filename = "Figure_timeseries.png", height =
 
 
 #######Summarize per year######
-##Inlude only months that were analyzed across all years (ie.Not May and June in 2019)
+##Include only months that were analyzed across all years (ie.Not May and June in 2019)
 all_years_gs_nov <- all_years%>%
   filter(date == "2018-11-15" |date == "2018-11-16"|date == "2018-11-17"|  date == "2019-07-08" | date == "2019-07-09" | date == "2019-07-12" | date == "2019-07-16" | date == "2019-07-17" | date == "2019-07-18" | date == "2019-07-19" | date == "2019-07-24" | date == "2019-07-25" | date == "2019-07-26" | date == "2019-08-01" | date == "2019-08-02" | date == "2019-08-03" | date == "2019-11-11" |date == "2019-11-12" | date == "2020-07-07" | date == "2020-07-08" |date == "2020-07-09" | date == "2020-07-24" | date == "2020-07-25" | date == "2020-08-05" | date == "2020-08-06" | date == "2020-11-16" |date == "2020-11-17"|date == "2020-11-18"| date == "2018-07-27" | date == "2018-08-03" | date == "2018-08-10" | date == "2018-08-14" | date == "2021-07-06" |date == "2021-07-09" |date == "2021-07-10" | date == "2021-08-03" | date == "2021-08-04" | date == "2021-08-06" | date == "2021-11-12" |date == "2021-11-13"|date == "2021-11-15" | date == "2022-06-28" | date == "2022-07-03"| date == "2022-06-27" | date == "2022-07-18" | date == "2022-07-19")
 
@@ -581,8 +581,6 @@ summary(rs_model_VWC)
 rs_model_temp <- aov(soilCO2Efflux  ~ Severity*Treatment*year +soilTemp + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
 summary(rs_model_temp)
 
-##Print output 
-capture.output(summary(rs_model), file = "Rs_anova.doc")
 
 
 ###Comparing AIC Values for Rs models: Lowest AIC with model with VWC as covariate 
@@ -610,7 +608,7 @@ out_year_VWC <- with(all_years_summary,LSD.test(VWC,year,72,0.76,console=TRUE))
 #Temp Model
 out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=TRUE))
 
-capture.output(summary(out_year_severity_rs), file = "Rs_LSD.doc")
+
 
 
 
@@ -757,8 +755,6 @@ summary(rh_model)
 rh_model_VWC <- aov(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year +ave_water_content_percent + Error(Rep_ID/Severity/Treatment/year), data = all_years_Rh_summary_transformed)
 summary(rh_model_VWC)
 
-#Print output
-capture.output(summary(rh_model_VWC), file = "Rh_model.doc")
 
 ##AIC Values for Rh Models 
 rh_lm_VWC <- lm(ave_soilCO2Efflux_umolg_transformed  ~ Severity*Treatment*year +ave_water_content_percent, data = all_years_Rh_summary_transformed)
@@ -1136,10 +1132,6 @@ plot(pre_post_model)
 gvlma::gvlma(pre_post_model)
 
 
-capture.output(summary(multiple_regression_model), file = "Rs_regression_multiple1.doc")
-capture.output(summary(post_hoc_regression), file = "Rs_regression_multiple2.doc")
-capture.output(summary(pre_post_model), file = "Rs_pre_post.doc")
-
 #######Calculation Rh resistance Values 
 resistance_rh <- all_years_Rh_severity
 
@@ -1221,7 +1213,7 @@ layout <- rbind(c(1,2))
             
                
 resistance <- grid.arrange(Rs_rt_grob, Rh_rt_grob, layout_matrix=layout)
-ggsave(path = "Manuscript_Figures", filename = "Figure_resistance.png",height = 10, width = 20, units = "in", resistance)
+ggsave(path = "Manuscript_figures", filename = "Figure_resistance.png",height = 10, width = 20, units = "in", resistance)
 
 
 
