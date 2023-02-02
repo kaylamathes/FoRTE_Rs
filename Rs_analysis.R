@@ -1319,7 +1319,7 @@ p.bio <-  ggplot(plot.sums_fig, aes(x = as.factor(disturbance_severity), y = ave
                       labels = c("Pre-Treatment", "Post-Treatment"))+
   facet_grid(.~treatment, labeller = labeller(treatment = facet.labs))+
   guides(fill = FALSE)+
-  theme(axis.title = element_text(size = 35),axis.text = element_text(size = 30), legend.text = element_text(size = 30), strip.text = element_text(size = 30), legend.position = "top", plot.margin = margin(0,0,0.8,0, "cm")) +
+  theme(axis.title = element_text(size = 40),axis.text = element_text(size = 35), legend.text = element_text(size = 35), strip.text = element_text(size = 35), legend.position = "top", plot.margin = margin(0,0,0.8,0, "cm")) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) 
 
 
@@ -1380,7 +1380,7 @@ p.vai <- ggplot(x_severity, aes(y = vai_mean, x = as.factor(disturbance_severity
   theme(legend.position = "none")+
   facet_grid( ~ year) +
   scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
-  theme(axis.title = element_text(size = 35),axis.text = element_text(size = 30),  strip.text = element_text(size = 30),plot.margin = margin(1,0,0,0, "cm") )
+  theme(axis.title = element_text(size = 40),axis.text = element_text(size = 35),  strip.text = element_text(size = 35),plot.margin = margin(1,0,0,0, "cm") )
 
 
 p.vai <- ggplotGrob(p.vai)
@@ -1422,9 +1422,13 @@ shapiro_test(residuals(normality_test))
 
 ####WORKING SPLIT-SPLIT MODEL: Using aov(). Same results as the agricolae package. 
 
+x2_sub <- x2%>%
+  filter(year == 2020| year == 2021)
+
 vai_model <- aov(vai_mean  ~ disturbance_severity*treatment*year + Error(replicate/disturbance_severity/treatment/year), data = x2)
 summary(vai_model)
 
+out_severity <- with(x2, LSD.test(vai_mean, disturbance_severity,9, 1.121, console = TRUE))
 
 out_year_severity_vai <- with(x2, LSD.test(vai_mean, disturbance_severity:year,69, 0.317, console = TRUE))
 
