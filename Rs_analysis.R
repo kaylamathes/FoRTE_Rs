@@ -824,6 +824,8 @@ all_years_Rh <- all_years_Rh%>%
 all_years_Rh <- all_years_Rh %>%
   mutate(Treatment = sapply(Subplot_code, Sub_plot_conversion))
 
+
+
 all_years_Rh$soilCO2Efflux <- as.numeric(all_years_Rh$soilCO2Efflux)
 all_years_Rh$Severity <- as.factor(all_years_Rh$Severity)
 
@@ -833,7 +835,7 @@ all_years_Rh$Severity <- as.factor(all_years_Rh$Severity)
 all_years_Rh <- all_years_Rh%>%
   mutate(soilCO2Efflux_umolg = soilCO2Efflux*(9/6)*(486)*(1/991)/dry_weight)
 
-
+write.csv(all_years_Rh, "jar_Rh.csv", row.names=FALSE)
 ###Create water content variable from oven to air dry weight ratio
 all_years_Rh <- all_years_Rh%>%
   mutate(water_content_percent = (1-oven.air.weight.ratio)*100)
