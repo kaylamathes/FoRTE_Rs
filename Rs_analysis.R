@@ -84,6 +84,7 @@ all_2020_sub <- all_2020%>%
 #2021: This deletes 4 rows 
 all_2021_sub <- all_2021%>%
   select(!notes)%>%
+  select(!time)%>%
   filter(!is.na(soilCO2Efflux))
 
 
@@ -477,6 +478,12 @@ g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_gro
 ggsave(path = "Manuscript_figures", filename = "Figure_timeseries.png", height = 20, width =30, units = "in", g_timeseries)
 
 
+all_years_timeseries_severity_VWC1 <- all_years_timeseries_severity_VWC%>%
+  filter(Severity == "0")%>%
+  filter(year == "2020")
+
+
+
 
 #######Summarize per year######
 ##Include only months that were analyzed across all years (ie.Not May and June in 2019)
@@ -566,11 +573,14 @@ ggqqplot(residuals(normality_test))
 shapiro_test(residuals(normality_test))
 
 
+
+
 ####WORKING SPLIT-SPLIT MODEL: Using aov(). Same results as the agricolae package. Ran an ANCOVA with VWC as a covariate.(However significance does not change with or without VWC). 
 
 #Rs Model without covariates
-rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Error(Rep_ID/Severity/Treatment/year), data = all_years_summary)
+rs_model <- aov(soilCO2Efflux  ~ Severity*Treatment*year + Rep_ID +Error(Rep_ID:Severity/Treatment/year), data = all_years_summary)
 summary(rs_model)
+all_years_summary$Rep_ID <- as.factor(all_years_summary$Rep_ID)
 
 
 #Rs model with VWC covariate 
@@ -598,6 +608,8 @@ AIC(rs_lm,rs_lm_temp,rs_lm_VWC)
 #Rs model
 out_year_severity_rs <- with(all_years_summary, LSD.test(soilCO2Efflux, Severity:year,72, 0.45, console = TRUE))
 
+out_year_severity_rs <- with(all_years_summary, LSD.test(soilCO2Efflux, Severity:Treatment,72, 0.45, console = TRUE))
+
 out_year_severity_rs_VWC <- with(all_years_summary, LSD.test(soilCO2Efflux, Severity:year,71, 0.441, console = TRUE))
 
 out_year_rs <- with(all_years_summary,LSD.test(soilCO2Efflux,year,72,0.703,console=TRUE))
@@ -609,6 +621,147 @@ out_year_VWC <- with(all_years_summary,LSD.test(VWC,year,72,0.76,console=TRUE))
 out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=TRUE))
 
 
+####Root Model 
+roots <- read.csv("Forte_fine_roots copy.csv")%>%
+  rename(Rep_ID = rep)
+
+roots <- merge(roots, all_years_summary, by = c ("Rep_ID", "Severity", "year", "Treatment"))
+
+roots$Severity <- as.factor(roots$Severity)
+roots$Treatment <- as.factor(roots$Treatment)
+roots$year <- as.factor(roots$year)
+roots$Rep_ID <- as.factor(roots$Rep_ID)
+
+roots <- roots%>%
+  mutate(roots_kg_m2_yr = root_mass_Mg_C_ha_yr_1*1000/10000)%>%
+  mutate(log_root_kg_m2_yr = log(roots_kg_m2_yr))
+
+root_model <- aov(log_root_kg_m2_yr  ~ Severity*Treatment*year  + Rep_ID +Error(Rep_ID:Severity/Treatment/year), data = roots)
+summary(root_model)
+
+
+
+out_year_severity <- with(roots,LSD.test(log_root_mass,Severity,9,0.8771,console=TRUE))
+
+roots_figure <- roots%>%
+  filter(roots_kg_m2_yr < "0.4")
+
+
+ggplot(roots_figure,aes(x = Severity, y = roots_kg_m2_yr, fill = Severity)) +
+  scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
+  theme_classic()+
+  geom_boxplot()+
+  theme(axis.text.x= element_text(size = 20), axis.text.y= element_text(size=20), axis.title.x = element_text(size = 25), axis.title.y  = element_text(size=25), legend.title = element_blank(),  strip.text.x =element_text(size = 25), legend.text = element_blank(), legend.position = "none") +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  guides(col = guide_legend(nrow = 2)) +
+  facet_grid(.~year,scales="free")+
+  labs(x = "Treatment", y= "Fine-root Production (kg C m2 yr")
+
+
+ggsave(path = "Manuscript_figures", filename = "Roots.png",height = 10, width = 15 , units = "in")
+
+
+###################### root multivariate analysis ###################
+# roots_lm <- roots
+# 
+# multiple_regression_model_roots <- lm(log_root_mass~ Severity + Severity*year + Rep_ID, data = roots_lm)
+# summary(multiple_regression_model_roots)
+# 
+# multiple_regression_model_roots2 <- lm(log_root_mass~ Severity + Severity*year, data = roots_lm)
+# summary(multiple_regression_model_roots2)
+# 
+# multiple_regression_model_roots3 <- lm(log_root_mass~ Severity +year +Rep_ID, data = roots_lm)
+# summary(multiple_regression_model_roots3)
+# 
+# multiple_regression_model_roots4 <- lm(log_root_mass~ Severity + year +Rep_ID + Severity*year*Rep_ID, data = roots_lm)
+# summary(multiple_regression_model_roots4)
+# 
+# AIC(multiple_regression_model_roots,multiple_regression_model_roots2,multiple_regression_model_roots3,multiple_regression_model_roots4)
+# 
+# 
+# ##graph model diagnostics
+# par(mfrow = c(2, 2))
+# plot(multiple_regression_model_roots)
+# 
+# ##Test model assumptions (all are met)
+# gvlma::gvlma(multiple_regression_model_roots)
+# post_hoc_regression_roots <- emmeans(multiple_regression_model_roots, pairwise ~ Severity)
+# 
+# summary(post_hoc_regression_roots)
+# 
+# root_lm_severity <- roots_lm%>%
+#   group_by(Severity, year)%>%
+#   summarize(root_mass_mean = mean(root_mass_Mg_C_ha_yr_1), root_se = std.error(root_mass_Mg_C_ha_yr_1), Rs_mean = mean(soilCO2Efflux), Rs_se = std.error(soilCO2Efflux),log_root_mass_mean = mean(log_root_mass), se_log_root = std.error(log_root_mass))%>%
+# ungroup()
+# 
+# ggplot(root_lm_severity, aes(x = Severity, y = root_mass_mean)) +
+#   geom_point() +
+#   geom_smooth(method= "lm", se = FALSE) +
+#   geom_errorbar(mapping=aes(x=Severity, ymin=root_mass_mean - root_se, ymax=root_mass_mean + root_se), size = 0.5, width = 1) +
+#   #scale_color_manual(values=c("#1261A0", "#3895D3", "#56CCED"))+
+#   ylab("Fine-root production (Mg C ha yr)") +
+#   theme_classic()
+ 
+
+########################### root and Rs ###########################
+#####First model is most parismonious
+roots_lm <- roots
+
+
+root_lm_severity <- roots_lm%>%
+  mutate(Type = case_when(Severity == "0" ~ "Control", 
+                          Severity == "45" | Severity == "65" | Severity == "85" ~ "Disturbance"))%>%
+  group_by(year, Type, Severity, Rep_ID)%>%
+  summarize(root_mass_mean = mean(roots_kg_m2_yr), root_se = std.error(roots_kg_m2_yr), Rs_mean = mean(soilCO2Efflux), Rs_se = std.error(soilCO2Efflux),log_root_mass_mean = mean(log_root_kg_m2_yr), se_log_root = std.error(log_root_kg_m2_yr))%>%
+  ungroup() 
+
+root_lm_figure <- roots_lm%>%
+  mutate(Type = case_when(Severity == "0" ~ "Control", 
+                          Severity == "45" | Severity == "65" | Severity == "85" ~ "Disturbance"))%>%
+  group_by(Severity, year, Type)%>%
+  summarize(root_mass_mean = mean(roots_kg_m2_yr), root_se = std.error(roots_kg_m2_yr), Rs_mean = mean(soilCO2Efflux), Rs_se = std.error(soilCO2Efflux),log_root_mass_mean = mean(log_root_kg_m2_yr), se_log_root = std.error(log_root_kg_m2_yr))%>%
+  ungroup()
+  
+
+
+root_lm_severity$year <- as.character(root_lm_severity$year)
+root_lm_severity$year <- as.numeric(root_lm_severity$year)
+
+
+multiple_regression_model_roots_Rs1 <- lm(Rs_mean ~ log_root_mass_mean + Type*log_root_mass_mean + log_root_mass_mean*year + Rep_ID, data = root_lm_severity)
+summary(multiple_regression_model_roots_Rs1)
+
+
+
+##Post Hoc 
+multiple_regression_model_roots_Rs_ph <- emmeans(multiple_regression_model_roots_Rs1, pairwise~ Type*log_root_mass_mean)
+
+
+# displaying the result table with summary()
+test(multiple_regression_model_roots_Rs_ph)
+summary(multiple_regression_model_roots_Rs_ph)
+
+# displaying the result table with summary()
+test(multiple_regression_model_roots_Rs_ph)
+
+root_lm_figure$Severity <- as.factor(root_lm_figure$Severity)
+
+
+
+ggplot(root_lm_figure, aes(x = root_mass_mean, y = Rs_mean, color = Severity)) +
+  geom_point(size = 2, aes(color = Severity)) +
+  geom_smooth(aes(linetype = Type, group = Type), method= "lm", se = FALSE, color = "darkgrey") +
+ geom_errorbarh(mapping=aes(xmin=root_mass_mean - root_se, xmax=root_mass_mean + root_se, color = Severity), size = 0.5, height = 0.1) +
+  scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
+  ylab("Soil Respiration") +
+  geom_errorbar(aes(ymin=Rs_mean - Rs_se, ymax=Rs_mean + Rs_se,color = Severity), size = 0.5, width = 0.005) +
+  theme_classic()
+
+
+##graph model diagnostics
+par(mfrow = c(2, 2))
+plot(multiple_regression_model_roots_Rs3)
+gvlma::gvlma(multiple_regression_model_roots_Rs3)
 
 
 
@@ -803,7 +956,7 @@ Rh1 <- ggplot(all_years_Rh_treatment_ONLY, aes(x = Treatment, y = ave_soilCO2Eff
   labs(x = "Disturbance Type", y=expression(paste(" ",R[h]," (",mu*molCO[2],"  ",g^-1,"  ",sec^-1,")"))) +annotate("text", x = 0.6, y = 0.0063, label = "B", size = 11)
 
 ##Plot Rh Severity all years
-Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg, fill = Severity)) +
+Rh2 <- ggplot(all_years_Rh_severity_ONLY, aes(x = Severity, y = ave_soilCO2Efflux_umolg)) +
   theme_classic(base_size = 20)+
   scale_fill_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00"))+
   geom_boxplot()+
@@ -838,8 +991,10 @@ out_year_Rh <- with(all_years_Rh_summary_transformed, LSD.test(ave_soilCO2Efflux
 all_years_Q10 <- all_years_gs_nov%>%
   filter(!is.na(soilTemp))%>%
   filter(year!=2018)%>%
-  group_by(Rep_ID, Severity, Treatment, date,year)%>%
+  group_by(Rep_ID, Severity, Treatment, date,year, Subplot_code)%>%
   summarize(ave_soilCO2Efflux = mean(soilCO2Efflux), ave_soilTemp = mean(soilTemp))
+
+write.csv(all_years_Q10, "Rs_Q10_dataframe.csv", row.names=FALSE)
 
 #Scatterplots 
 ##All datapoints by day of measurement 
