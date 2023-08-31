@@ -1,6 +1,6 @@
 ###########################################################
 ####Data Analysis and code for "Sustained three year decline in soil respiration is proportional to disturbance severity" 
-##Manuscript submitted to Ecosystems 
+##Manuscript published in Ecosystems in 2023
 ####Authors: Kayla C. Mathes (lead-author and code author), Stephanie Pennington, Carly Rodriguez, Christoph Vogel, Ben Bond-Lamberty, Jeff Atkins(code writer), Christopher M. Gough
 ###########################################################
 
@@ -478,9 +478,9 @@ g_timeseries <- grid.arrange(p1_grob, p2_grob, p3_grob, p4_grob, p5_grob, p6_gro
 ggsave(path = "Manuscript_figures", filename = "Figure_timeseries.png", height = 20, width =30, units = "in", g_timeseries)
 
 
-all_years_timeseries_severity_VWC1 <- all_years_timeseries_severity_VWC%>%
-  filter(Severity == "0")%>%
-  filter(year == "2020")
+# all_years_timeseries_severity_VWC1 <- all_years_timeseries_severity_VWC%>%
+#   filter(Severity == "0")%>%
+#   filter(year == "2020")
 
 
 
@@ -620,7 +620,7 @@ out_year_VWC <- with(all_years_summary,LSD.test(VWC,year,72,0.76,console=TRUE))
 #Temp Model
 out_year_temp <- with(all_years_summary,LSD.test(soilTemp,year,72,0.75,console=TRUE))
 
-
+######################Fine Root Production Rs relationship ####################
 ####Root Model 
 roots <- read.csv("Forte_fine_roots copy.csv")%>%
   rename(Rep_ID = rep)
@@ -660,49 +660,7 @@ ggplot(roots_figure,aes(x = Severity, y = roots_kg_m2_yr, fill = Severity)) +
 
 ggsave(path = "Manuscript_figures", filename = "Roots.png",height = 10, width = 15 , units = "in")
 
-
-###################### root multivariate analysis ###################
-# roots_lm <- roots
-# 
-# multiple_regression_model_roots <- lm(log_root_mass~ Severity + Severity*year + Rep_ID, data = roots_lm)
-# summary(multiple_regression_model_roots)
-# 
-# multiple_regression_model_roots2 <- lm(log_root_mass~ Severity + Severity*year, data = roots_lm)
-# summary(multiple_regression_model_roots2)
-# 
-# multiple_regression_model_roots3 <- lm(log_root_mass~ Severity +year +Rep_ID, data = roots_lm)
-# summary(multiple_regression_model_roots3)
-# 
-# multiple_regression_model_roots4 <- lm(log_root_mass~ Severity + year +Rep_ID + Severity*year*Rep_ID, data = roots_lm)
-# summary(multiple_regression_model_roots4)
-# 
-# AIC(multiple_regression_model_roots,multiple_regression_model_roots2,multiple_regression_model_roots3,multiple_regression_model_roots4)
-# 
-# 
-# ##graph model diagnostics
-# par(mfrow = c(2, 2))
-# plot(multiple_regression_model_roots)
-# 
-# ##Test model assumptions (all are met)
-# gvlma::gvlma(multiple_regression_model_roots)
-# post_hoc_regression_roots <- emmeans(multiple_regression_model_roots, pairwise ~ Severity)
-# 
-# summary(post_hoc_regression_roots)
-# 
-# root_lm_severity <- roots_lm%>%
-#   group_by(Severity, year)%>%
-#   summarize(root_mass_mean = mean(root_mass_Mg_C_ha_yr_1), root_se = std.error(root_mass_Mg_C_ha_yr_1), Rs_mean = mean(soilCO2Efflux), Rs_se = std.error(soilCO2Efflux),log_root_mass_mean = mean(log_root_mass), se_log_root = std.error(log_root_mass))%>%
-# ungroup()
-# 
-# ggplot(root_lm_severity, aes(x = Severity, y = root_mass_mean)) +
-#   geom_point() +
-#   geom_smooth(method= "lm", se = FALSE) +
-#   geom_errorbar(mapping=aes(x=Severity, ymin=root_mass_mean - root_se, ymax=root_mass_mean + root_se), size = 0.5, width = 1) +
-#   #scale_color_manual(values=c("#1261A0", "#3895D3", "#56CCED"))+
-#   ylab("Fine-root production (Mg C ha yr)") +
-#   theme_classic()
  
-
 ########################### root and Rs ###########################
 #####First model is most parismonious
 roots_lm <- roots
@@ -730,7 +688,7 @@ root_lm_severity$year <- as.numeric(root_lm_severity$year)
 
 multiple_regression_model_roots_Rs1 <- lm(Rs_mean ~ log_root_mass_mean + Type*log_root_mass_mean + log_root_mass_mean*year + Rep_ID, data = root_lm_severity)
 summary(multiple_regression_model_roots_Rs1)
-
+library(emmeans)
 
 
 ##Post Hoc 
@@ -741,27 +699,33 @@ multiple_regression_model_roots_Rs_ph <- emmeans(multiple_regression_model_roots
 test(multiple_regression_model_roots_Rs_ph)
 summary(multiple_regression_model_roots_Rs_ph)
 
-# displaying the result table with summary()
-test(multiple_regression_model_roots_Rs_ph)
+
+##graph model diagnostics
+par(mfrow = c(2, 2))
+plot(multiple_regression_model_roots_Rs1)
+gvlma::gvlma(multiple_regression_model_roots_Rs1)
 
 root_lm_figure$Severity <- as.factor(root_lm_figure$Severity)
 
 
-
+##########Figure
 ggplot(root_lm_figure, aes(x = root_mass_mean, y = Rs_mean, color = Severity)) +
-  geom_point(size = 2, aes(color = Severity)) +
-  geom_smooth(aes(linetype = Type, group = Type), method= "lm", se = FALSE, color = "darkgrey") +
+  geom_point(size = 6, aes(color = Severity)) +
+  geom_smooth(aes(linetype = Type, group = Type), method= "lm", se = FALSE, color = "darkgray",size = 3,show.legend = FALSE) +
+  theme(legend.position="top") +
  geom_errorbarh(mapping=aes(xmin=root_mass_mean - root_se, xmax=root_mass_mean + root_se, color = Severity), size = 0.5, height = 0.1) +
   scale_color_manual(values=c("#000000", "#009E73", "#0072B2", "#D55E00")) +
-  ylab("Soil Respiration") +
+  labs(x = expression(paste("",Fine-root," ",production," (",kg," ",m^-2," ",yr^-1,")")), y=expression(paste(" ",R[s]," (",mu*molCO[2],"  ",m^-2,"  ",sec^-1,")"))) +
   geom_errorbar(aes(ymin=Rs_mean - Rs_se, ymax=Rs_mean + Rs_se,color = Severity), size = 0.5, width = 0.005) +
-  theme_classic()
+  theme_classic() +
+  scale_y_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ .,labels = NULL)) +
+  theme(axis.text= element_text(size = 30), axis.title = element_text(size = 35), legend.title = element_text(size = 25), legend.text = element_text(size = 20),legend.position = c(.9,.25)) 
+  
+
+ggsave(path = "Manuscript_figures", filename = "Roots_Rs.png",height = 10, width = 12 , units = "in")
 
 
-##graph model diagnostics
-par(mfrow = c(2, 2))
-plot(multiple_regression_model_roots_Rs3)
-gvlma::gvlma(multiple_regression_model_roots_Rs3)
 
 
 
@@ -835,7 +799,7 @@ all_years_Rh$Severity <- as.factor(all_years_Rh$Severity)
 all_years_Rh <- all_years_Rh%>%
   mutate(soilCO2Efflux_umolg = soilCO2Efflux*(9/6)*(486)*(1/991)/dry_weight)
 
-write.csv(all_years_Rh, "jar_Rh.csv", row.names=FALSE)
+
 ###Create water content variable from oven to air dry weight ratio
 all_years_Rh <- all_years_Rh%>%
   mutate(water_content_percent = (1-oven.air.weight.ratio)*100)
@@ -843,8 +807,10 @@ all_years_Rh <- all_years_Rh%>%
 ##Summarize Rh across Rep, treatment, severity and year
 all_years_Rh_summary <- all_years_Rh%>%
   filter(!is.na(soilCO2Efflux_umolg))%>%
-  group_by(Rep_ID, year, Severity, Treatment)%>%
+  group_by(Rep_ID, year, Severity, Treatment, Subplot_code)%>%
   summarize(ave_soilCO2Efflux_umolg = mean(soilCO2Efflux_umolg),ave_water_content_percent = mean(water_content_percent), ave_soilTemp = mean(soilTemp))
+
+write.csv(all_years_Rh_summary, "jar_Rh.csv", row.names=FALSE)
 
 ##Summarize Rh across Rep, severity and year only  
 all_years_Rh_severity <- all_years_Rh%>%
